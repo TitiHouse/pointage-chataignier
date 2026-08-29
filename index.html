@@ -277,112 +277,111 @@
 </div>
 
 <script>
+    // URL Google Apps Script de centralisation
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwuC4zNdsejh4BLSTlGoEyMizhfVylgUn8Fw2eVfS5U4ig6I6ssa8Yg4Fx31GAdsVwY/exec";
+
   let selectedUser = null;
-  let timeLeft = 60;
-  let timerInterval = null;
+  let timeLeft = 60;
+  let timerInterval = null;
 
-  function startTimer() {
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      document.getElementById('countdown').innerText = timeLeft;
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('countdown').innerText = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        expireSession();
+      }
+    }, 1000);
+  }
 
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        expireSession();
-      }
-    }, 1000);
-  }
+  function expireSession() {
+    const banner = document.getElementById('timerBanner');
+    banner.classList.add('expired');
+    banner.innerHTML = "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
+    document.querySelectorAll('.btn-user').forEach(btn => btn.disabled = true);
+    document.getElementById('btnIn').disabled = true;
+    document.getElementById('btnOut').disabled = true;
+    resetSelection();
+  }
 
-  function expireSession() {
-    const banner = document.getElementById('timerBanner');
-    banner.classList.add('expired');
-    banner.innerHTML = "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
-    
-    document.querySelectorAll('.btn-user').forEach(btn => btn.disabled = true);
-    document.getElementById('btnIn').disabled = true;
-    document.getElementById('btnOut').disabled = true;
-    resetSelection();
-  }
+  function selectUser(name) {
+    if (timeLeft <= 0) return;
+    selectedUser = name;
+    document.querySelectorAll('.btn-user').forEach(btn => {
+      btn.classList.toggle('selected', btn.innerText === name);
+    });
+    document.getElementById('btnIn').classList.add('active');
+    document.getElementById('btnOut').classList.add('active');
+  }
 
-  function selectUser(name) {
-    if (timeLeft <= 0) return;
+  function record(action) {
+    if (!selectedUser || timeLeft <= 0) return;
 
-    selectedUser = name;
-    document.querySelectorAll('.btn-user').forEach(btn => {
-      btn.classList.toggle('selected', btn.innerText === name);
-    });
-    document.getElementById('btnIn').classList.add('active');
-    document.getElementById('btnOut').classList.add('active');
-  }
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-BE');
+    const timeStr = now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
 
-  function record(action) {
-    if (!selectedUser || timeLeft <= 0) return;
+    // Envoi immédiat vers Google Sheets
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
+      .then(() => {
+        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`);
+        renderHistory();
+      });
 
-    const now = new Date();
-    const entry = {
-      date: now.toLocaleDateString('fr-BE'),
-      time: now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }),
-      user: selectedUser,
-      action: action
-    };
+    clearInterval(timerInterval);
+    document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
+    resetSelection();
+  }
 
-    let logs = JSON.parse(localStorage.getItem('pointages') || '[]');
-    logs.unshift(entry);
-    localStorage.setItem('pointages', JSON.stringify(logs));
+  function showAlert(msg) {
+    const alert = document.getElementById('alertMsg');
+    alert.innerText = msg;
+    alert.style.display = 'block';
+    setTimeout(() => { alert.style.display = 'none'; }, 4000);
+  }
 
-    showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${entry.time}`);
-    
-    clearInterval(timerInterval);
-    document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
-    
-    resetSelection();
-    renderHistory();
-  }
+  function resetSelection() {
+    selectedUser = null;
+    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('btnIn').classList.remove('active');
+    document.getElementById('btnOut').classList.remove('active');
+  }
 
-  function showAlert(msg) {
-    const alert = document.getElementById('alertMsg');
-    alert.innerText = msg;
-    alert.style.display = 'block';
-    setTimeout(() => { alert.style.display = 'none'; }, 4000);
-  }
+  function renderHistory() {
+    fetch(SCRIPT_URL)
+      .then(res => res.json())
+      .then(logs => {
+        const list = document.getElementById('historyList');
+        list.innerHTML = logs.slice(0, 10).map(log => `
+          <li class="history-item">
+            <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
+            <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
+          </li>
+        `).join('');
+      });
+  }
 
-  function resetSelection() {
-    selectedUser = null;
-    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('btnIn').classList.remove('active');
-    document.getElementById('btnOut').classList.remove('active');
-  }
+  function exportToCSV() {
+    fetch(SCRIPT_URL)
+      .then(res => res.json())
+      .then(logs => {
+        if (logs.length === 0) return alert('Aucune donnée à exporter.');
+        let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
+        logs.forEach(l => {
+          csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+      });
+  }
 
-  function renderHistory() {
-    const logs = JSON.parse(localStorage.getItem('pointages') || '[]');
-    const list = document.getElementById('historyList');
-    list.innerHTML = logs.slice(0, 10).map(log => `
-      <li class="history-item">
-        <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
-        <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
-      </li>
-    `).join('');
-  }
-
-  function exportToCSV() {
-    const logs = JSON.parse(localStorage.getItem('pointages') || '[]');
-    if (logs.length === 0) return alert('Aucune donnée à exporter.');
-
-    let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
-    logs.forEach(l => {
-      csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-  }
-
-  startTimer();
-  renderHistory();
+  startTimer();
+  renderHistory();
 </script>
 
 </body>
