@@ -482,11 +482,9 @@
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDJDf6fj43ztbTRYb3rlXneGQftEueRUZgv6qrb_csql0N1VIqX8MMtLD9KyFf8NvjmA/exec";
 
-  // --- LOGIQUE DE SÉCURITÉ QR CODE ET VERROUILLAGE SESSION ---
-  const SESSION_DURATION = 60; // secondes
+  const SESSION_DURATION = 60;
   const urlParams = new URLSearchParams(window.location.search);
 
-  // Initialisation si venant du QR Code avec ?scan=true
   if (urlParams.get('scan') === 'true') {
     sessionStorage.setItem('sessionStartTime', Date.now());
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -639,14 +637,33 @@
     if (e.key === 'Enter') validatePin();
   });
 
+  function recordManualAction() {
+    const dateInput = document.getElementById('manualDate');
+    const timeInput = document.getElementById('manualTime');
+
+    if (!dateInput || !timeInput || !dateInput.value || !timeInput.value) {
+      alert("Veuillez sélectionner une date et une heure valides.");
+      return;
+    }
+
+    const [y, m, d] = dateInput.value.split('-');
+    const formattedDate = `${d}/${m}/${y}`;
+    const formattedTime = timeInput.value;
+
+    record(currentManualAction, formattedDate, formattedTime, true);
+  }
+
   function record(action, customDateStr = null, customTimeStr = null, isManual = false) {
     if (!selectedUser || getRemainingSeconds() <= 0) return;
 
-    // Arrêt du minuteur et verrouillage du bouton pour éviter le double-clic
     clearInterval(timerInterval);
-    document.querySelectorAll('.btn-action, .btn-manual-submit').forEach(b => b.style.pointerEvents = 'none');
 
-    // Affichage d'un état de chargement
+    const now = new Date();
+    const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
+    const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+    const modeStr = isManual ? 'MANUEL' : 'AUTOMATIQUE';
+    const activeUser = selectedUser;
+
     document.body.innerHTML = `
       <div style="
         display: flex;
@@ -667,14 +684,11 @@
       </div>
     `;
 
-    const now = new Date();
-    const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
-    const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
-    const modeStr = isManual ? 'MANUEL' : 'AUTOMATIQUE';
-
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`)
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(activeUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`, {
+      method: 'GET',
+      mode: 'no-cors'
+    })
       .then(() => {
-        // Bloque la session pour empêcher de re-pointer au rafraîchissement
         sessionStorage.setItem('sessionStartTime', 0);
 
         document.body.innerHTML = `
@@ -694,7 +708,7 @@
             <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
             <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
             <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5;">
-              ${selectedUser} (${action}) enregistrée le ${dateStr} à ${timeStr}.
+              <strong>${activeUser}</strong> (${action})<br>enregistré(e) pour le ${dateStr} à ${timeStr}.
             </p>
           </div>
         `;
@@ -702,7 +716,7 @@
         try { window.close(); } catch(e) {}
       })
       .catch(err => {
-        alert("Erreur de connexion lors de l'enregistrement. Veuillez rescanner le QR code.");
+        alert("Erreur lors de l'enregistrement. Veuillez rescanner le QR code.");
         location.reload();
       });
   }
@@ -720,30 +734,6 @@
       
       document.getElementById('manualDate').value = `${yyyy}-${mm}-${dd}`;
       document.getElementById('manualTime').value = currentManualAction === 'SORTIE' ? "18:00" : "08:00";
-    }
-  }
-
-  function recordManualAction() {
-    const dateVal = document.getElementById('manualDate').value;
-    const timeVal = document.getElementById('manualTime').value;
-
-    if (!dateVal || !timeVal) {
-      alert("Veuillez sélectionner une date et une heure valides.");
-      return;
-    }
-
-    const [y, m, d] = dateVal.split('-');
-    const formattedDate = `${d}/${m}/${y}`;
-
-    record(currentManualAction, formattedDate, timeVal, true);
-  }
-
-  function showAlert(msg) {
-    const alert = document.getElementById('alertMsg');
-    if (alert) {
-      alert.innerText = msg;
-      alert.style.display = 'block';
-      setTimeout(() => { alert.style.display = 'none'; }, 4000);
     }
   }
 
@@ -816,7 +806,6 @@
       });
   }
 
-  // --- CONTRÔLE INITIAL AU CHARGEMENT ---
   if (getRemainingSeconds() <= 0) {
     expireSession();
   } else {
