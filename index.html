@@ -1,724 +1,391 @@
-```html
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pointage - Centre Médical du Châtaignier</title>
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvaW50YWdlIENlbnRyZSBNw6lkaWNhbCIsCiAgInNob3J0X25hbWUiOiAiUG9pbnRhZ2UiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjOGNkYjI5Igp9">
+  <style>
+    :root {
+      --primary-green: #8cdb29;
+      --primary-dark: #6fae1b;
+      --bg-dark: #0f172a;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+    }
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-color);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 15px;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 480px;
+  background-color: #f8fafc;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: #ffffff;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 3px solid var(--primary-green);
+}
+
+.logo-container {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 10px auto;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 3px solid var(--primary-green);
+  overflow: hidden;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.header h1 {
+  font-size: 1.15rem;
+  color: #0f172a;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timer-banner {
+  background-color: #fef3c7;
+  color: #92400e;
+  text-align: center;
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-bottom: 1px solid #fde68a;
+}
+
+.timer-banner.expired {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.content {
+  padding: 20px;
+  flex: 1;
+}
+
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.collaborators {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.btn-user {
+  padding: 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-user.selected {
+  border-color: var(--primary-green);
+  background-color: rgba(140, 219, 41, 0.15);
+  color: var(--primary-dark);
+}
+
+.btn-user:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.btn-action {
+  padding: 18px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.btn-action.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.btn-in {
+  background-color: var(--primary-green);
+  color: #0f172a;
+}
+
+.btn-out {
+  background-color: #ef4444;
+}
+
+.btn-action:disabled {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+}
+
+.alert {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #dcfce7;
+  color: #15803d;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.history-card {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.export-btn {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.history-list {
+  max-height: 180px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+}
+
+.badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
+.badge-out { background-color: #fee2e2; color: #dc2626; }
+
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="header">
+    <div class="logo-container">
+      <img src="Chataignier.png" alt="Logo Centre Médical du Châtaignier" class="logo-img">
+    </div>
+    <h1>Centre Médical<br>du Châtaignier</h1>
+  </div>
+
+  <div id="timerBanner" class="timer-banner">
+    ⏱️ Temps restant pour valider : <span id="countdown">60</span>s
+  </div>
+
+  <div class="content">
+    <div class="section-title">1. Choisir le collaborateur</div>
+    <div class="collaborators">
+      <button class="btn-user" onclick="selectUser('Julie')">Julie</button>
+      <button class="btn-user" onclick="selectUser('Vincent')">Vincent</button>
+    </div>
+
+<div class="section-title">2. Action</div>
+<div class="actions">
+  <button id="btnIn" class="btn-action btn-in" onclick="record('ENTRÉE')">ENTRÉE</button>
+  <button id="btnOut" class="btn-action btn-out" onclick="record('SORTIE')">SORTIE</button>
+</div>
+
+<div id="alertMsg" class="alert"></div>
+
+<div class="history-card">
+  <div class="history-header">
+    <span class="section-title" style="margin:0;">Derniers pointages</span>
+    <button class="export-btn" onclick="exportToCSV()">Télécharger CSV</button>
+  </div>
+  <ul id="historyList" class="history-list"></ul>
+</div>
+
+  </div>
+</div>
+
 <script>
-
-  // =========================================================
-  // CONFIGURATION
-  // =========================================================
-
-  const SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbxk5UR03Nf2C-zcKsGEuznqG5RZrAV2eUDfKDEvJ7lNaXI3Z9Zzae_4ztkuAXeKE50q3w/exec";
-
-  const REQUEST_TIMEOUT = 10000; // 10 secondes
+    // URL Google Apps Script de centralisation
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDJDf6fj43ztbTRYb3rlXneGQftEueRUZgv6qrb_csql0N1VIqX8MMtLD9KyFf8NvjmA/exec";
 
   let selectedUser = null;
-  let timeLeft = 60;
-  let timerInterval = null;
-  let isRecording = false;
-
-  // Évite de recharger plusieurs fois la page
-  let isReloading = false;
-
-
-  // =========================================================
-  // URL GOOGLE APPS SCRIPT SANS CACHE
-  // =========================================================
-
-  function getScriptUrl(parameters = {}) {
-
-    const url = new URL(SCRIPT_URL);
-
-    Object.keys(parameters).forEach(key => {
-      url.searchParams.set(key, parameters[key]);
-    });
-
-    // Anti-cache
-    url.searchParams.set("_t", Date.now());
-
-    return url.toString();
-  }
-
-
-  // =========================================================
-  // FETCH AVEC TIMEOUT
-  // =========================================================
-
-  async function fetchWithTimeout(url, options = {}) {
-
-    const controller = new AbortController();
-
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, REQUEST_TIMEOUT);
-
-    try {
-
-      const response = await fetch(url, {
-        ...options,
-
-        // Très important :
-        // demande au navigateur de ne pas utiliser son cache.
-        cache: "no-store",
-
-        signal: controller.signal
-      });
-
-      return response;
-
-    } finally {
-
-      clearTimeout(timeout);
-
-    }
-  }
-
-
-  // =========================================================
-  // DÉTECTION DE LA CONNEXION
-  // =========================================================
-
-  window.addEventListener("offline", () => {
-
-    console.log("Connexion Internet perdue.");
-
-    showAlert(
-      "⚠️ Connexion Internet perdue. En attente du retour du réseau...",
-      "error"
-    );
-
-  });
-
-
-  window.addEventListener("online", () => {
-
-    console.log("Connexion Internet rétablie.");
-
-    showAlert(
-      "🌐 Connexion rétablie. Rechargement de l'application...",
-      "loading"
-    );
-
-    /*
-     * Petit délai pour laisser au navigateur
-     * le temps de réellement retrouver Internet.
-     */
-    setTimeout(() => {
-
-      if (!isReloading) {
-
-        isReloading = true;
-
-        /*
-         * On force une nouvelle URL avec un timestamp.
-         * Cela évite que le navigateur ressorte
-         * une ancienne version de la page.
-         */
-        const url = new URL(window.location.href);
-
-        url.searchParams.set("_reload", Date.now());
-
-        window.location.replace(url.toString());
-
-      }
-
-    }, 1000);
-
-  });
-
-
-  // =========================================================
-  // COMPTE À REBOURS
-  // =========================================================
-
-  function startTimer() {
-
-    clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => {
-
-      timeLeft--;
-
-      document.getElementById("countdown").innerText = timeLeft;
-
-      if (timeLeft <= 0) {
-
-        clearInterval(timerInterval);
-
-        expireSession();
-
-      }
-
-    }, 1000);
-
-  }
-
-
-  // =========================================================
-  // EXPIRATION
-  // =========================================================
-
-  function expireSession() {
-
-    const banner =
-      document.getElementById("timerBanner");
-
-    banner.classList.add("expired");
-
-    banner.innerHTML =
-      "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
-
-    document
-      .querySelectorAll(".btn-user")
-      .forEach(btn => btn.disabled = true);
-
-    document.getElementById("btnIn").disabled = true;
-    document.getElementById("btnOut").disabled = true;
-
-    resetSelection();
-
-  }
-
-
-  // =========================================================
-  // SÉLECTION COLLABORATEUR
-  // =========================================================
-
-  function selectUser(name) {
-
-    if (timeLeft <= 0 || isRecording) {
-      return;
-    }
-
-    selectedUser = name;
-
-    document
-      .querySelectorAll(".btn-user")
-      .forEach(btn => {
-
-        btn.classList.toggle(
-          "selected",
-          btn.innerText.trim() === name
-        );
-
-      });
-
-    document
-      .getElementById("btnIn")
-      .classList.add("active");
-
-    document
-      .getElementById("btnOut")
-      .classList.add("active");
-
-  }
-
-
-  // =========================================================
-  // ENREGISTREMENT DU POINTAGE
-  // =========================================================
-
-  async function record(action) {
-
-    if (!selectedUser || timeLeft <= 0 || isRecording) {
-      return;
-    }
-
-    // Si le navigateur sait déjà qu'il est hors ligne
-    if (!navigator.onLine) {
-
-      showAlert(
-        "❌ Aucune connexion Internet. Veuillez attendre le retour du réseau.",
-        "error"
-      );
-
-      return;
-    }
-
-    isRecording = true;
-
-    const btnIn =
-      document.getElementById("btnIn");
-
-    const btnOut =
-      document.getElementById("btnOut");
-
-    btnIn.disabled = true;
-    btnOut.disabled = true;
-
-
-    const userAtStart = selectedUser;
-
-    const now = new Date();
-
-    const dateStr =
-      now.toLocaleDateString("fr-BE");
-
-    const timeStr =
-      now.toLocaleTimeString(
-        "fr-BE",
-        {
-          hour: "2-digit",
-          minute: "2-digit"
-        }
-      );
-
-
-    showAlert(
-      "⏳ Enregistrement du pointage en cours...",
-      "loading"
-    );
-
-
-    // =======================================================
-    // CONSTRUCTION URL
-    // =======================================================
-
-    const url = getScriptUrl({
-
-      user: userAtStart,
-      action: action,
-      date: dateStr,
-      time: timeStr
-
-    });
-
-
-    console.log("Envoi du pointage :", url);
-
-
-    try {
-
-      // =====================================================
-      // APPEL GOOGLE APPS SCRIPT
-      // =====================================================
-
-      const response =
-        await fetchWithTimeout(url);
-
-
-      console.log(
-        "Réponse Google Apps Script :",
-        response.status
-      );
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          `Erreur HTTP ${response.status}`
-        );
-
-      }
-
-
-      // =====================================================
-      // LECTURE DE LA RÉPONSE
-      // =====================================================
-
-      let serverData = null;
-
-      try {
-
-        serverData = await response.json();
-
-        console.log(
-          "Réponse serveur :",
-          serverData
-        );
-
-      } catch (jsonError) {
-
-        /*
-         * Certaines réponses Apps Script peuvent
-         * ne pas être interprétées comme JSON.
-         *
-         * Si HTTP = 200, on continue.
-         */
-
-        console.warn(
-          "Réponse non JSON reçue."
-        );
-
-      }
-
-
-      /*
-       * IMPORTANT :
-       *
-       * Si Apps Script nous renvoie explicitement
-       * status = error, on considère que le pointage
-       * n'a PAS été enregistré.
-       */
-
-      if (
-        serverData &&
-        serverData.status === "error"
-      ) {
-
-        throw new Error(
-          serverData.message ||
-          "Le serveur a refusé le pointage."
-        );
-
-      }
-
-
-      // =====================================================
-      // SUCCÈS
-      // =====================================================
-
-      showAlert(
-        `✅ Pointage enregistré : ${userAtStart} (${action}) à ${timeStr}`,
-        "success"
-      );
-
-
-      clearInterval(timerInterval);
-
-
-      document
-        .getElementById("timerBanner")
-        .classList.remove("expired");
-
-
-      document
-        .getElementById("timerBanner")
-        .innerHTML =
-        "✅ Pointage validé avec succès !";
-
-
-      // Recharge l'historique
-      renderHistory();
-
-
-      // Réinitialise la sélection
-      resetSelection();
-
-
-      isRecording = false;
-
-
-    } catch (error) {
-
-      console.error(
-        "Erreur lors de l'enregistrement :",
-        error
-      );
-
-
-      let message =
-        "❌ Impossible d'enregistrer le pointage.";
-
-
-      if (error.name === "AbortError") {
-
-        message =
-          "❌ Le serveur ne répond pas. Vérifiez votre connexion et réessayez.";
-
-      } else if (!navigator.onLine) {
-
-        message =
-          "❌ Connexion Internet perdue. Attendez le retour du réseau puis réessayez.";
-
-      }
-
-
-      showAlert(
-        message,
-        "error"
-      );
-
-
-      /*
-       * Très important :
-       * on libère TOUJOURS le verrou.
-       */
-
-      isRecording = false;
-
-      btnIn.disabled = false;
-      btnOut.disabled = false;
-
-    }
-
-  }
-
-
-  // =========================================================
-  // MESSAGE
-  // =========================================================
-
-  function showAlert(msg, type = "success") {
-
-    const alert =
-      document.getElementById("alertMsg");
-
-    alert.innerText = msg;
-
-    alert.className = "alert";
-
-    if (type === "error") {
-      alert.classList.add("error");
-    }
-
-    if (type === "loading") {
-      alert.classList.add("loading");
-    }
-
-    alert.style.display = "block";
-
-
-    if (type === "success") {
-
-      setTimeout(() => {
-
-        alert.style.display = "none";
-
-      }, 4000);
-
-    }
-
-  }
-
-
-  // =========================================================
-  // RESET
-  // =========================================================
-
-  function resetSelection() {
-
-    selectedUser = null;
-
-    document
-      .querySelectorAll(".btn-user")
-      .forEach(btn => {
-
-        btn.classList.remove("selected");
-
-      });
-
-    document
-      .getElementById("btnIn")
-      .classList.remove("active");
-
-    document
-      .getElementById("btnOut")
-      .classList.remove("active");
-
-  }
-
-
-  // =========================================================
-  // HISTORIQUE
-  // =========================================================
-
-  async function renderHistory() {
-
-    const list =
-      document.getElementById("historyList");
-
-
-    try {
-
-      const url =
-        getScriptUrl();
-
-
-      const response =
-        await fetchWithTimeout(url);
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          `Erreur HTTP ${response.status}`
-        );
-
-      }
-
-
-      const logs =
-        await response.json();
-
-
-      list.innerHTML =
-        logs.slice(0, 10).map(log => `
-
-          <li class="history-item">
-
-            <span>
-              <strong>${escapeHtml(log.user)}</strong>
-              (${escapeHtml(log.date)} ${escapeHtml(log.time)})
-            </span>
-
-            <span class="badge ${
-              log.action === "ENTRÉE"
-                ? "badge-in"
-                : "badge-out"
-            }">
-              ${escapeHtml(log.action)}
-            </span>
-
-          </li>
-
-        `).join("");
-
-
-    } catch (error) {
-
-      console.error(
-        "Erreur lors du chargement de l'historique :",
-        error
-      );
-
-      list.innerHTML = `
-        <li class="history-item">
-          <span>
-            Impossible de charger l'historique.
-          </span>
-        </li>
-      `;
-
-    }
-
-  }
-
-
-  // =========================================================
-  // PROTECTION HTML
-  // =========================================================
-
-  function escapeHtml(value) {
-
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-
-  }
-
-
-  // =========================================================
-  // EXPORT CSV
-  // =========================================================
-
-  async function exportToCSV() {
-
-    try {
-
-      if (!navigator.onLine) {
-
-        alert(
-          "❌ Aucune connexion Internet."
-        );
-
-        return;
-
-      }
-
-
-      const response =
-        await fetchWithTimeout(
-          getScriptUrl()
-        );
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          `Erreur HTTP ${response.status}`
-        );
-
-      }
-
-
-      const logs =
-        await response.json();
-
-
-      if (logs.length === 0) {
-
-        alert(
-          "Aucune donnée à exporter."
-        );
-
-        return;
-
-      }
-
-
-      let csvContent =
-        "\uFEFFDate;Heure;Collaborateur;Action\n";
-
-
-      logs.forEach(l => {
-
-        csvContent +=
-          `${l.date};${l.time};${l.user};${l.action}\n`;
-
-      });
-
-
-      const blob =
-        new Blob(
-          [csvContent],
-          {
-            type: "text/csv;charset=utf-8;"
-          }
-        );
-
-
-      const url =
-        URL.createObjectURL(blob);
-
-
-      const a =
-        document.createElement("a");
-
-      a.href = url;
-
-      a.download =
-        `Pointages_Chataignier_${
-          new Date()
-            .toISOString()
-            .slice(0, 10)
-        }.csv`;
-
-
-      document.body.appendChild(a);
-
-      a.click();
-
-      document.body.removeChild(a);
-
-
-      URL.revokeObjectURL(url);
-
-
-    } catch (error) {
-
-      console.error(
-        "Erreur lors de l'export CSV :",
-        error
-      );
-
-      alert(
-        "❌ Impossible de télécharger les pointages. Vérifiez votre connexion et réessayez."
-      );
-
-    }
-
-  }
-
-
-  // =========================================================
-  // DÉMARRAGE
-  // =========================================================
-
-  startTimer();
-
-  renderHistory();
-
+  let timeLeft = 60;
+  let timerInterval = null;
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('countdown').innerText = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        expireSession();
+      }
+    }, 1000);
+  }
+
+  function expireSession() {
+    const banner = document.getElementById('timerBanner');
+    banner.classList.add('expired');
+    banner.innerHTML = "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
+    document.querySelectorAll('.btn-user').forEach(btn => btn.disabled = true);
+    document.getElementById('btnIn').disabled = true;
+    document.getElementById('btnOut').disabled = true;
+    resetSelection();
+  }
+
+  function selectUser(name) {
+    if (timeLeft <= 0) return;
+    selectedUser = name;
+    document.querySelectorAll('.btn-user').forEach(btn => {
+      btn.classList.toggle('selected', btn.innerText === name);
+    });
+    document.getElementById('btnIn').classList.add('active');
+    document.getElementById('btnOut').classList.add('active');
+  }
+
+  function record(action) {
+    if (!selectedUser || timeLeft <= 0) return;
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-BE');
+    const timeStr = now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+
+    // Envoi immédiat vers Google Sheets
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
+      .then(() => {
+        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`);
+        renderHistory();
+      });
+
+    clearInterval(timerInterval);
+    document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
+    resetSelection();
+  }
+
+  function showAlert(msg) {
+    const alert = document.getElementById('alertMsg');
+    alert.innerText = msg;
+    alert.style.display = 'block';
+    setTimeout(() => { alert.style.display = 'none'; }, 4000);
+  }
+
+  function resetSelection() {
+    selectedUser = null;
+    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('btnIn').classList.remove('active');
+    document.getElementById('btnOut').classList.remove('active');
+  }
+
+  function renderHistory() {
+    fetch(SCRIPT_URL)
+      .then(res => res.json())
+      .then(logs => {
+        const list = document.getElementById('historyList');
+        list.innerHTML = logs.slice(0, 10).map(log => `
+          <li class="history-item">
+            <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
+            <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
+          </li>
+        `).join('');
+      });
+  }
+
+  function exportToCSV() {
+    fetch(SCRIPT_URL)
+      .then(res => res.json())
+      .then(logs => {
+        if (logs.length === 0) return alert('Aucune donnée à exporter.');
+        let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
+        logs.forEach(l => {
+          csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+      });
+  }
+
+  startTimer();
+  renderHistory();
 </script>
-```
+
+</body>
+</html>
