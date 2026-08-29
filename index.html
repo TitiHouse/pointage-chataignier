@@ -480,26 +480,25 @@
     'Vincent': '1234'
   };
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvtgiOv2J4vYrv58XSeQEVuRkiCLBL-WKfLWEKmpDn4UwEj8hjZ_q2Rrx1QFVJFw/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDJDf6fj43ztbTRYb3rlXneGQftEueRUZgv6qrb_csql0N1VIqX8MMtLD9KyFf8NvjmA/exec";
 
-  // 1. Détection du scan via le QR Code (?scan=true)
+  // --- LOGIQUE DE SÉCURITÉ QR CODE ET VERROUILLAGE SESSION ---
+  const SESSION_DURATION = 60; // secondes
   const urlParams = new URLSearchParams(window.location.search);
+
+  // 1. Initialisation UNIQUEMENT si venant du QR Code avec ?scan=true
   if (urlParams.get('scan') === 'true') {
     sessionStorage.setItem('sessionStartTime', Date.now());
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // 2. Chronomètre et calcul du temps restant résistant au rafraîchissement
-  const SESSION_DURATION = 60; // en secondes
-  let sessionStart = sessionStorage.getItem('sessionStartTime');
+  // 2. Récupération de l'horodatage initial
+  const sessionStart = sessionStorage.getItem('sessionStartTime');
 
-  if (!sessionStart) {
-    sessionStart = Date.now();
-    sessionStorage.setItem('sessionStartTime', sessionStart);
-  }
-
+  // 3. Calcul précis du temps restant
   function getRemainingSeconds() {
-    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    if (!sessionStart) return 0; // Aucun scan valide trouvé => Expiration immédiate
+    const elapsed = Math.floor((Date.now() - Number(sessionStart)) / 1000);
     return SESSION_DURATION - elapsed;
   }
 
@@ -524,8 +523,7 @@
   }
 
   function expireSession() {
-    sessionStorage.removeItem('sessionStartTime');
-
+    // Note: On ne vide pas sessionStorage pour maintenir le blocage même en cas de refresh (slide/F5)
     document.body.innerHTML = `
       <div style="
         display: flex;
@@ -659,7 +657,9 @@
       });
 
     clearInterval(timerInterval);
-    sessionStorage.removeItem('sessionStartTime');
+    
+    // Verrouille la session après validation
+    sessionStorage.setItem('sessionStartTime', 0);
     
     document.body.innerHTML = `
       <div style="
@@ -795,7 +795,7 @@
       });
   }
 
-  // Démarrage avec vérification
+  // --- CONTRÔLE INITIAL AU CHARGEMENT ---
   if (getRemainingSeconds() <= 0) {
     expireSession();
   } else {
