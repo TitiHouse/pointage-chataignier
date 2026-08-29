@@ -136,11 +136,27 @@
       cursor: not-allowed;
     }
 
+    .user-status-banner {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 15px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-status-banner strong {
+      color: #0f172a;
+    }
+
     .actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
 
     .btn-action {
@@ -151,14 +167,35 @@
       font-weight: 700;
       color: white;
       cursor: pointer;
-      opacity: 0.5;
+      opacity: 0.4;
       pointer-events: none;
       transition: all 0.2s ease;
+      position: relative;
     }
 
     .btn-action.active {
-      opacity: 1;
+      opacity: 0.7;
       pointer-events: auto;
+    }
+
+    .btn-action.recommended {
+      opacity: 1 !important;
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-action.recommended::after {
+      content: "★ Suggéré";
+      position: absolute;
+      top: -8px;
+      right: 10px;
+      background: #0f172a;
+      color: white;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .btn-in {
@@ -173,6 +210,67 @@
     .btn-action:disabled {
       opacity: 0.3 !important;
       pointer-events: none !important;
+    }
+
+    /* Section Oubli de pointage */
+    .manual-toggle-container {
+      margin-bottom: 20px;
+    }
+
+    .btn-toggle-manual {
+      background: none;
+      border: none;
+      color: #0284c7;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0;
+      display: none;
+    }
+
+    .manual-box {
+      display: none;
+      background: #f1f5f9;
+      border: 1px dashed #cbd5e1;
+      padding: 14px;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+
+    .manual-box label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    .manual-inputs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .manual-inputs input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: white;
+    }
+
+    .btn-manual-submit {
+      width: 100%;
+      padding: 10px;
+      background-color: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
     }
 
     .alert {
@@ -248,7 +346,7 @@
     .badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
     .badge-out { background-color: #fee2e2; color: #dc2626; }
 
-    /* Styles Modale PIN */
+    /* Modale PIN */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -344,10 +442,30 @@
       <button class="btn-user" onclick="openPinModal('Vincent')">Vincent</button>
     </div>
 
+    <div id="userStatusBanner" class="user-status-banner">
+      <span>Dernier pointage : <strong id="lastStatusText">-</strong></span>
+    </div>
+
     <div class="section-title">2. Action</div>
     <div class="actions">
       <button id="btnIn" class="btn-action btn-in" onclick="record('ENTRÉE')">ENTRÉE</button>
       <button id="btnOut" class="btn-action btn-out" onclick="record('SORTIE')">SORTIE</button>
+    </div>
+
+    <div class="manual-toggle-container">
+      <button id="btnToggleManual" class="btn-toggle-manual" onclick="toggleManualMode()">
+        ⚠️ Oubli de sortie ? Enregistrer une date/heure manuelle
+      </button>
+      <div id="manualBox" class="manual-box">
+        <label>Saisir la date et l'heure de sortie oubliée :</label>
+        <div class="manual-inputs">
+          <input type="date" id="manualDate">
+          <input type="time" id="manualTime">
+        </div>
+        <button class="btn-manual-submit" onclick="recordManualExit()">
+          Valider la SORTIE rattrapée
+        </button>
+      </div>
     </div>
 
     <div id="alertMsg" class="alert"></div>
@@ -386,6 +504,7 @@
   let pendingUser = null;
   let timeLeft = 60;
   let timerInterval = null;
+  let cachedLogs = [];
 
   function startTimer() {
     timerInterval = setInterval(() => {
@@ -431,8 +550,43 @@
       document.querySelectorAll('.btn-user').forEach(btn => {
         btn.classList.toggle('selected', btn.innerText === selectedUser);
       });
-      document.getElementById('btnIn').classList.add('active');
-      document.getElementById('btnOut').classList.add('active');
+
+      // Activer les boutons d'action
+      const btnIn = document.getElementById('btnIn');
+      const btnOut = document.getElementById('btnOut');
+      btnIn.classList.add('active');
+      btnOut.classList.add('active');
+
+      // Afficher l'option de rattrapage manuel
+      document.getElementById('btnToggleManual').style.display = 'inline-block';
+
+      // Déterminer la dernière action du collaborateur
+      const userLogs = cachedLogs.filter(l => l.user === selectedUser);
+      const lastLog = userLogs.length > 0 ? userLogs[0] : null;
+
+      btnIn.classList.remove('recommended');
+      btnOut.classList.remove('recommended');
+
+      const statusBanner = document.getElementById('userStatusBanner');
+      const lastStatusText = document.getElementById('lastStatusText');
+
+      if (lastLog) {
+        const { displayDate, displayTime } = parseAndFormatDateTime(lastLog.date, lastLog.time);
+        lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})`;
+        statusBanner.style.display = 'flex';
+
+        // Proposer automatiquement l'action opposée
+        if (lastLog.action === 'ENTRÉE') {
+          btnOut.classList.add('recommended');
+        } else {
+          btnIn.classList.add('recommended');
+        }
+      } else {
+        lastStatusText.innerText = "Aucun pointage récent";
+        statusBanner.style.display = 'flex';
+        btnIn.classList.add('recommended');
+      }
+
       closePinModal();
     } else {
       const errEl = document.getElementById('pinError');
@@ -447,22 +601,57 @@
     if (e.key === 'Enter') validatePin();
   });
 
-  function record(action) {
+  function record(action, customDateStr = null, customTimeStr = null) {
     if (!selectedUser || timeLeft <= 0) return;
 
     const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-BE');
-    const timeStr = now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
+    const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
 
     fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
       .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`);
+        showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}`);
         renderHistory();
       });
 
     clearInterval(timerInterval);
     document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
     resetSelection();
+  }
+
+  function toggleManualMode() {
+    const box = document.getElementById('manualBox');
+    const isOpen = box.style.display === 'block';
+    box.style.display = isOpen ? 'none' : 'block';
+
+    if (!isOpen) {
+      // Définir par défaut la date d'hier et l'heure actuelle
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const yyyy = yesterday.getFullYear();
+      const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+      const dd = String(yesterday.getDate()).padStart(2, '0');
+      
+      document.getElementById('manualDate').value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById('manualTime').value = "18:00";
+    }
+  }
+
+  function recordManualExit() {
+    const dateVal = document.getElementById('manualDate').value;
+    const timeVal = document.getElementById('manualTime').value;
+
+    if (!dateVal || !timeVal) {
+      alert("Veuillez sélectionner une date et une heure valides.");
+      return;
+    }
+
+    // Convertir AAAA-MM-JJ en JJ/MM/AAAA
+    const [y, m, d] = dateVal.split('-');
+    const formattedDate = `${d}/${m}/${y}`;
+
+    record('SORTIE', formattedDate, timeVal);
   }
 
   function showAlert(msg) {
@@ -475,15 +664,19 @@
   function resetSelection() {
     selectedUser = null;
     document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('btnIn').classList.remove('active');
-    document.getElementById('btnOut').classList.remove('active');
+    const btnIn = document.getElementById('btnIn');
+    const btnOut = document.getElementById('btnOut');
+    btnIn.classList.remove('active', 'recommended');
+    btnOut.classList.remove('active', 'recommended');
+    document.getElementById('userStatusBanner').style.display = 'none';
+    document.getElementById('btnToggleManual').style.display = 'none';
+    document.getElementById('manualBox').style.display = 'none';
   }
 
   function parseAndFormatDateTime(rawDate, rawTime) {
     let displayDate = (rawDate !== undefined && rawDate !== null) ? String(rawDate) : '';
     let displayTime = (rawTime !== undefined && rawTime !== null) ? String(rawTime) : '';
 
-    // 1. Nettoyage de l'heure si elle contient un format ISO (ex: "1899-12-30T14:15:00.000Z")
     if (displayTime.includes('T')) {
       const timeParts = displayTime.split('T');
       const timePart = timeParts[1] || '';
@@ -495,7 +688,6 @@
       displayTime = displayTime.substring(0, 5);
     }
 
-    // 2. Nettoyage de la date si elle contient un format ISO (ex: "2026-08-29T14:15:00.000Z")
     if (displayDate.includes('T')) {
       const dateParts = displayDate.split('T');
       const datePart = dateParts[0] || '';
@@ -513,7 +705,7 @@
         }
       }
     } else if (/^\d{4}-\d{2}-\d{2}$/.test(displayDate)) {
-      const [y, m, d] = displayDate.split('-');
+      const [y, m, d] = dateDate.split('-');
       displayDate = `${d}/${m}/${y}`;
     }
 
@@ -524,13 +716,14 @@
     fetch(SCRIPT_URL)
       .then(res => res.json())
       .then(logs => {
+        cachedLogs = Array.isArray(logs) ? logs : [];
         const list = document.getElementById('historyList');
-        if (!logs || !Array.isArray(logs) || logs.length === 0) {
+        if (!cachedLogs || cachedLogs.length === 0) {
           list.innerHTML = '<li class="history-item" style="justify-content:center;color:#94a3b8;">Aucun pointage récent</li>';
           return;
         }
 
-        list.innerHTML = logs.slice(0, 10).map(log => {
+        list.innerHTML = cachedLogs.slice(0, 10).map(log => {
           const { displayDate, displayTime } = parseAndFormatDateTime(log.date, log.time);
           const formattedDateTime = displayTime ? `${displayDate} à ${displayTime}` : displayDate;
 
