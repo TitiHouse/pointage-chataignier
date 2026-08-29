@@ -445,7 +445,7 @@
 
     fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
       .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à${timeStr}`);
+        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`);
         renderHistory();
       });
 
@@ -475,7 +475,7 @@
         const list = document.getElementById('historyList');
         list.innerHTML = logs.slice(0, 10).map(log => `
           <li class="history-item">
-            <span><strong>${log.user}</strong> (${log.date}${log.time})</span>
+            <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
             <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
           </li>
         `).join('');
@@ -489,4 +489,20 @@
         if (logs.length === 0) return alert('Aucune donnée à exporter.');
         let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
         logs.forEach(l => {
-          csvContent += `${l.date};${l.time};${l.user};${l.action
+          csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+      });
+  }
+
+  startTimer();
+  renderHistory();
+</script>
+
+</body>
+</html>
