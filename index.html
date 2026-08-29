@@ -221,9 +221,21 @@
     .history-item {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       padding: 8px 0;
       border-bottom: 1px solid #f1f5f9;
       font-size: 0.85rem;
+    }
+
+    .history-user-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .history-date {
+      font-size: 0.75rem;
+      color: #64748b;
     }
 
     .badge {
@@ -363,7 +375,6 @@
 </div>
 
 <script>
-  // Codes d'accès 4 chiffres (modifiables ici)
   const PIN_CODES = {
     'Julie': '0677',
     'Vincent': '1234'
@@ -468,17 +479,74 @@
     document.getElementById('btnOut').classList.remove('active');
   }
 
+  function parseAndFormatDateTime(rawDate, rawTime) {
+    let displayDate = (rawDate !== undefined && rawDate !== null) ? String(rawDate) : '';
+    let displayTime = (rawTime !== undefined && rawTime !== null) ? String(rawTime) : '';
+
+    // 1. Nettoyage de l'heure si elle contient un format ISO (ex: "1899-12-30T14:15:00.000Z")
+    if (displayTime.includes('T')) {
+      const timeParts = displayTime.split('T');
+      const timePart = timeParts[1] || '';
+      const tMatch = timePart.match(/^(\d{2}):(\d{2})/);
+      if (tMatch) {
+        displayTime = `${tMatch[1]}:${tMatch[2]}`;
+      }
+    } else if (/^\d{2}:\d{2}:\d{2}$/.test(displayTime)) {
+      displayTime = displayTime.substring(0, 5);
+    }
+
+    // 2. Nettoyage de la date si elle contient un format ISO (ex: "2026-08-29T14:15:00.000Z")
+    if (displayDate.includes('T')) {
+      const dateParts = displayDate.split('T');
+      const datePart = dateParts[0] || '';
+      const timePart = dateParts[1] || '';
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        const [y, m, d] = datePart.split('-');
+        displayDate = `${d}/${m}/${y}`;
+      }
+
+      if (!displayTime && timePart) {
+        const tMatch = timePart.match(/^(\d{2}):(\d{2})/);
+        if (tMatch) {
+          displayTime = `${tMatch[1]}:${tMatch[2]}`;
+        }
+      }
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(displayDate)) {
+      const [y, m, d] = displayDate.split('-');
+      displayDate = `${d}/${m}/${y}`;
+    }
+
+    return { displayDate, displayTime };
+  }
+
   function renderHistory() {
     fetch(SCRIPT_URL)
       .then(res => res.json())
       .then(logs => {
         const list = document.getElementById('historyList');
-        list.innerHTML = logs.slice(0, 10).map(log => `
-          <li class="history-item">
-            <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
-            <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
-          </li>
-        `).join('');
+        if (!logs || !Array.isArray(logs) || logs.length === 0) {
+          list.innerHTML = '<li class="history-item" style="justify-content:center;color:#94a3b8;">Aucun pointage récent</li>';
+          return;
+        }
+
+        list.innerHTML = logs.slice(0, 10).map(log => {
+          const { displayDate, displayTime } = parseAndFormatDateTime(log.date, log.time);
+          const formattedDateTime = displayTime ? `${displayDate} à ${displayTime}` : displayDate;
+
+          return `
+            <li class="history-item">
+              <div class="history-user-info">
+                <strong>${log.user || 'Collaborateur'}</strong>
+                <span class="history-date">${formattedDateTime}</span>
+              </div>
+              <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action || ''}</span>
+            </li>
+          `;
+        }).join('');
+      })
+      .catch(err => {
+        console.error("Erreur d'historique:", err);
       });
   }
 
@@ -486,10 +554,11 @@
     fetch(SCRIPT_URL)
       .then(res => res.json())
       .then(logs => {
-        if (logs.length === 0) return alert('Aucune donnée à exporter.');
+        if (!logs || logs.length === 0) return alert('Aucune donnée à exporter.');
         let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
         logs.forEach(l => {
-          csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
+          const { displayDate, displayTime } = parseAndFormatDateTime(l.date, l.time);
+          csvContent += `${displayDate};${displayTime};${l.user || ''};${l.action || ''}\n`;
         });
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -497,7 +566,8 @@
         a.href = url;
         a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
         a.click();
-      });
+      })
+      .catch(() => alert('Erreur lors de l\'export CSV.'));
   }
 
   startTimer();
