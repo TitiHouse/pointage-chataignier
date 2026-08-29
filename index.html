@@ -6,6 +6,11 @@
   <title>Pointage - Centre Médical du Châtaignier</title>
   <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvaW50YWdlIENlbnRyZSBNw6lkaWNhbCIsCiAgInNob3J0X25hbWUiOiAiUG9pbnRhZ2UiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjOGNkYjI5Igp9">
   <style>
+    html, body {
+      overscroll-behavior-y: none; /* Bloque le glisser-vers-le-bas sur mobile */
+      touch-action: pan-x pan-y;
+    }
+
     :root {
       --primary-green: #8cdb29;
       --primary-dark: #6fae1b;
@@ -87,12 +92,6 @@
       border-bottom: 1px solid #fde68a;
     }
 
-    .timer-banner.expired {
-      background-color: #fee2e2;
-      color: #991b1b;
-      border-color: #fca5a5;
-    }
-
     .content {
       padding: 20px;
       flex: 1;
@@ -129,11 +128,6 @@
       border-color: var(--primary-green);
       background-color: rgba(140, 219, 41, 0.15);
       color: var(--primary-dark);
-    }
-
-    .btn-user:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
 
     .user-status-banner {
@@ -205,11 +199,6 @@
 
     .btn-out {
       background-color: #ef4444;
-    }
-
-    .btn-action:disabled {
-      opacity: 0.3 !important;
-      pointer-events: none !important;
     }
 
     .manual-toggle-container {
@@ -491,19 +480,42 @@
     'Vincent': '1234'
   };
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6BQ93GdIkilpcoeNA_ICoFR4kcr45sU5MC0FvTeTK0U7yTAALH1G6KhzFVCxrrhwd8g/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvtgiOv2J4vYrv58XSeQEVuRkiCLBL-WKfLWEKmpDn4UwEj8hjZ_q2Rrx1QFVJFw/exec";
+
+  // 1. Détection du scan via le QR Code (?scan=true)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('scan') === 'true') {
+    sessionStorage.setItem('sessionStartTime', Date.now());
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  // 2. Chronomètre et calcul du temps restant résistant au rafraîchissement
+  const SESSION_DURATION = 60; // en secondes
+  let sessionStart = sessionStorage.getItem('sessionStartTime');
+
+  if (!sessionStart) {
+    sessionStart = Date.now();
+    sessionStorage.setItem('sessionStartTime', sessionStart);
+  }
+
+  function getRemainingSeconds() {
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    return SESSION_DURATION - elapsed;
+  }
 
   let selectedUser = null;
   let pendingUser = null;
-  let timeLeft = 60;
   let timerInterval = null;
   let cachedLogs = [];
   let currentManualAction = 'SORTIE';
 
   function startTimer() {
     timerInterval = setInterval(() => {
-      timeLeft--;
-      document.getElementById('countdown').innerText = timeLeft;
+      const timeLeft = getRemainingSeconds();
+      const countEl = document.getElementById('countdown');
+      
+      if (countEl) countEl.innerText = Math.max(0, timeLeft);
+      
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         expireSession();
@@ -512,18 +524,35 @@
   }
 
   function expireSession() {
-    const banner = document.getElementById('timerBanner');
-    banner.classList.add('expired');
-    banner.innerHTML = "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
-    document.querySelectorAll('.btn-user').forEach(btn => btn.disabled = true);
-    document.getElementById('btnIn').disabled = true;
-    document.getElementById('btnOut').disabled = true;
-    closePinModal();
-    resetSelection();
+    sessionStorage.removeItem('sessionStartTime');
+
+    document.body.innerHTML = `
+      <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        width: 100vw;
+        background-color: #ffffff;
+        color: #0f172a;
+        text-align: center;
+        padding: 30px;
+        box-sizing: border-box;
+      ">
+        <div style="font-size: 3.5rem; margin-bottom: 20px;">🔒</div>
+        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #dc2626; text-transform: uppercase;">Session expirée</h2>
+        <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5;">
+          Le délai d'utilisation est écoulé.<br><br>Veuillez <strong>rescanner le QR Code</strong> pour accéder à nouveau au pointage.
+        </p>
+      </div>
+    `;
+
+    try { window.close(); } catch (e) {}
   }
 
   function openPinModal(name) {
-    if (timeLeft <= 0) return;
+    if (getRemainingSeconds() <= 0) return;
     pendingUser = name;
     document.getElementById('pinUserName').innerText = name;
     document.getElementById('pinInput').value = '';
@@ -533,7 +562,8 @@
   }
 
   function closePinModal() {
-    document.getElementById('pinModal').classList.remove('active');
+    const modal = document.getElementById('pinModal');
+    if (modal) modal.classList.remove('active');
     pendingUser = null;
   }
 
@@ -615,7 +645,7 @@
   });
 
   function record(action, customDateStr = null, customTimeStr = null, isManual = false) {
-    if (!selectedUser || timeLeft <= 0) return;
+    if (!selectedUser || getRemainingSeconds() <= 0) return;
 
     const now = new Date();
     const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
@@ -629,8 +659,31 @@
       });
 
     clearInterval(timerInterval);
-    document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
-    resetSelection();
+    sessionStorage.removeItem('sessionStartTime');
+    
+    document.body.innerHTML = `
+      <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        width: 100vw;
+        background-color: #ffffff;
+        color: #0f172a;
+        text-align: center;
+        padding: 30px;
+        box-sizing: border-box;
+      ">
+        <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
+        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
+        <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5;">
+          ${selectedUser} (${action}) enregistrée le ${dateStr} à ${timeStr}.
+        </p>
+      </div>
+    `;
+
+    try { window.close(); } catch(e) {}
   }
 
   function toggleManualMode() {
@@ -666,21 +719,11 @@
 
   function showAlert(msg) {
     const alert = document.getElementById('alertMsg');
-    alert.innerText = msg;
-    alert.style.display = 'block';
-    setTimeout(() => { alert.style.display = 'none'; }, 4000);
-  }
-
-  function resetSelection() {
-    selectedUser = null;
-    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
-    const btnIn = document.getElementById('btnIn');
-    const btnOut = document.getElementById('btnOut');
-    btnIn.classList.remove('active', 'recommended');
-    btnOut.classList.remove('active', 'recommended');
-    document.getElementById('userStatusBanner').style.display = 'none';
-    document.getElementById('btnToggleManual').style.display = 'none';
-    document.getElementById('manualBox').style.display = 'none';
+    if (alert) {
+      alert.innerText = msg;
+      alert.style.display = 'block';
+      setTimeout(() => { alert.style.display = 'none'; }, 4000);
+    }
   }
 
   function parseAndFormatDateTime(rawDate, rawTime) {
@@ -718,6 +761,8 @@
       .then(logs => {
         cachedLogs = Array.isArray(logs) ? logs : [];
         const list = document.getElementById('historyList');
+        if (!list) return;
+
         if (!cachedLogs || cachedLogs.length === 0) {
           list.innerHTML = '<li class="history-item" style="justify-content:center;color:#94a3b8;">Aucun pointage récent</li>';
           return;
@@ -750,8 +795,13 @@
       });
   }
 
-  startTimer();
-  renderHistory();
+  // Démarrage avec vérification
+  if (getRemainingSeconds() <= 0) {
+    expireSession();
+  } else {
+    startTimer();
+    renderHistory();
+  }
 </script>
 
 </body>
