@@ -299,17 +299,6 @@
       margin-bottom: 12px;
     }
 
-    .export-btn {
-      background: #0f172a;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
     .history-list {
       max-height: 180px;
       overflow-y: auto;
@@ -343,8 +332,7 @@
     }
 
     .manual-icon {
-      font-size: 0.85rem;
-      cursor: help;
+      font-size: 0.9rem;
     }
 
     .badge {
@@ -483,7 +471,6 @@
     <div class="history-card">
       <div class="history-header">
         <span class="section-title" style="margin:0;">Derniers pointages</span>
-        <button class="export-btn" onclick="exportToCSV()">Télécharger CSV</button>
       </div>
       <ul id="historyList" class="history-list"></ul>
     </div>
@@ -516,6 +503,18 @@
   let timerInterval = null;
   let cachedLogs = [];
   let currentManualAction = 'SORTIE';
+
+  function saveManualFlag(user, date, time) {
+    let manualLogs = JSON.parse(localStorage.getItem('chataignier_manual_logs') || '[]');
+    manualLogs.push({ user, date, time });
+    if (manualLogs.length > 50) manualLogs.shift();
+    localStorage.setItem('chataignier_manual_logs', JSON.stringify(manualLogs));
+  }
+
+  function checkIsManual(user, date, time) {
+    let manualLogs = JSON.parse(localStorage.getItem('chataignier_manual_logs') || '[]');
+    return manualLogs.some(l => l.user === user && l.date === date && l.time === time);
+  }
 
   function startTimer() {
     timerInterval = setInterval(() => {
@@ -583,8 +582,9 @@
 
       if (lastLog) {
         const { displayDate, displayTime } = parseAndFormatDateTime(lastLog.date, lastLog.time);
-        const isManual = lastLog.isManual === true || lastLog.isManual === 'true' || lastLog.manual === true || lastLog.manual === 'true';
+        const isManual = checkIsManual(lastLog.user, displayDate, displayTime);
         const manualIcon = isManual ? ' ✏️' : '';
+        
         lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})${manualIcon}`;
         statusBanner.style.display = 'flex';
 
@@ -638,14 +638,13 @@
     const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
     const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
 
-    let url = `${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`;
     if (isManual) {
-      url += `&isManual=true`;
+      saveManualFlag(selectedUser, dateStr, timeStr);
     }
 
-    fetch(url)
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
       .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}${isManual ? ' (Manuel)' : ''}`);
+        showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}`);
         renderHistory();
       });
 
@@ -747,7 +746,7 @@
         list.innerHTML = cachedLogs.slice(0, 10).map(log => {
           const { displayDate, displayTime } = parseAndFormatDateTime(log.date, log.time);
           const formattedDateTime = displayTime ? `${displayDate} à ${displayTime}` : displayDate;
-          const isManual = log.isManual === true || log.isManual === 'true' || log.manual === true || log.manual === 'true';
+          const isManual = checkIsManual(log.user, displayDate, displayTime);
           const manualIcon = isManual ? '<span class="manual-icon" title="Rattrapage manuel">✏️</span>' : '';
 
           return `
@@ -767,27 +766,6 @@
       .catch(err => {
         console.error("Erreur d'historique:", err);
       });
-  }
-
-  function exportToCSV() {
-    fetch(SCRIPT_URL)
-      .then(res => res.json())
-      .then(logs => {
-        if (!logs || logs.length === 0) return alert('Aucune donnée à exporter.');
-        let csvContent = "\uFEFFDate;Heure;Collaborateur;Action;Mode\n";
-        logs.forEach(l => {
-          const { displayDate, displayTime } = parseAndFormatDateTime(l.date, l.time);
-          const isManual = l.isManual === true || l.isManual === 'true' || l.manual === true || l.manual === 'true';
-          csvContent += `${displayDate};${displayTime};${l.user || ''};${l.action || ''};${isManual ? 'Manuel' : 'Direct'}\n`;
-        });
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
-      })
-      .catch(() => alert('Erreur lors de l\'export CSV.'));
   }
 
   startTimer();
