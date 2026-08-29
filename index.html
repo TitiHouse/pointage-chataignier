@@ -270,6 +270,7 @@
       font-weight: 700;
       font-size: 0.9rem;
       cursor: pointer;
+      transition: background-color 0.2s ease;
     }
 
     .alert {
@@ -452,16 +453,16 @@
 
     <div class="manual-toggle-container">
       <button id="btnToggleManual" class="btn-toggle-manual" onclick="toggleManualMode()">
-        ⚠️ Oubli de sortie ? Enregistrer une date/heure manuelle
+        <!-- Intitulé dynamique géré en JS -->
       </button>
       <div id="manualBox" class="manual-box">
-        <label>Saisir la date et l'heure de sortie oubliée :</label>
+        <label id="manualBoxLabel">Saisir la date et l'heure :</label>
         <div class="manual-inputs">
           <input type="date" id="manualDate">
           <input type="time" id="manualTime">
         </div>
-        <button class="btn-manual-submit" onclick="recordManualExit()">
-          Valider la SORTIE rattrapée
+        <button id="btnManualSubmit" class="btn-manual-submit" onclick="recordManualAction()">
+          Valider
         </button>
       </div>
     </div>
@@ -503,6 +504,7 @@
   let timeLeft = 60;
   let timerInterval = null;
   let cachedLogs = [];
+  let currentManualAction = 'SORTIE';
 
   function startTimer() {
     timerInterval = setInterval(() => {
@@ -564,6 +566,9 @@
 
       const statusBanner = document.getElementById('userStatusBanner');
       const lastStatusText = document.getElementById('lastStatusText');
+      const btnToggleManual = document.getElementById('btnToggleManual');
+      const manualBoxLabel = document.getElementById('manualBoxLabel');
+      const btnManualSubmit = document.getElementById('btnManualSubmit');
 
       if (lastLog) {
         const { displayDate, displayTime } = parseAndFormatDateTime(lastLog.date, lastLog.time);
@@ -572,13 +577,31 @@
 
         if (lastLog.action === 'ENTRÉE') {
           btnOut.classList.add('recommended');
+          currentManualAction = 'SORTIE';
+          btnToggleManual.innerText = "⚠️ Oubli de sortie ? Enregistrer une date/heure manuelle de SORTIE";
+          manualBoxLabel.innerText = "Saisir la date et l'heure de la SORTIE oubliée :";
+          btnManualSubmit.innerText = "Valider la SORTIE rattrapée";
+          btnManualSubmit.style.backgroundColor = "#dc2626";
+          btnManualSubmit.style.color = "#ffffff";
         } else {
           btnIn.classList.add('recommended');
+          currentManualAction = 'ENTRÉE';
+          btnToggleManual.innerText = "⚠️ Oubli d'entrée ? Enregistrer une date/heure manuelle d'ENTRÉE";
+          manualBoxLabel.innerText = "Saisir la date et l'heure de l'ENTRÉE oubliée :";
+          btnManualSubmit.innerText = "Valider l'ENTRÉE rattrapée";
+          btnManualSubmit.style.backgroundColor = "var(--primary-green)";
+          btnManualSubmit.style.color = "#0f172a";
         }
       } else {
         lastStatusText.innerText = "Aucun pointage récent";
         statusBanner.style.display = 'flex';
         btnIn.classList.add('recommended');
+        currentManualAction = 'ENTRÉE';
+        btnToggleManual.innerText = "⚠️ Oubli d'entrée ? Enregistrer une date/heure manuelle d'ENTRÉE";
+        manualBoxLabel.innerText = "Saisir la date et l'heure de l'ENTRÉE oubliée :";
+        btnManualSubmit.innerText = "Valider l'ENTRÉE rattrapée";
+        btnManualSubmit.style.backgroundColor = "var(--primary-green)";
+        btnManualSubmit.style.color = "#0f172a";
       }
 
       closePinModal();
@@ -625,11 +648,11 @@
       const dd = String(today.getDate()).padStart(2, '0');
       
       document.getElementById('manualDate').value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById('manualTime').value = "18:00";
+      document.getElementById('manualTime').value = currentManualAction === 'SORTIE' ? "18:00" : "08:00";
     }
   }
 
-  function recordManualExit() {
+  function recordManualAction() {
     const dateVal = document.getElementById('manualDate').value;
     const timeVal = document.getElementById('manualTime').value;
 
@@ -641,7 +664,7 @@
     const [y, m, d] = dateVal.split('-');
     const formattedDate = `${d}/${m}/${y}`;
 
-    record('SORTIE', formattedDate, timeVal);
+    record(currentManualAction, formattedDate, timeVal);
   }
 
   function showAlert(msg) {
