@@ -7,7 +7,7 @@
   <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvaW50YWdlIENlbnRyZSBNw6lkaWNhbCIsCiAgInNob3J0X25hbWUiOiAiUG9pbnRhZ2UiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjOGNkYjI5Igp9">
   <style>
     html, body {
-      overscroll-behavior-y: none; /* Bloque le glisser-vers-le-bas sur mobile */
+      overscroll-behavior-y: none;
       touch-action: pan-x pan-y;
     }
 
@@ -486,18 +486,16 @@
   const SESSION_DURATION = 60; // secondes
   const urlParams = new URLSearchParams(window.location.search);
 
-  // 1. Initialisation UNIQUEMENT si venant du QR Code avec ?scan=true
+  // Initialisation si venant du QR Code avec ?scan=true
   if (urlParams.get('scan') === 'true') {
     sessionStorage.setItem('sessionStartTime', Date.now());
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // 2. Récupération de l'horodatage initial
   const sessionStart = sessionStorage.getItem('sessionStartTime');
 
-  // 3. Calcul précis du temps restant
   function getRemainingSeconds() {
-    if (!sessionStart) return 0; // Aucun scan valide trouvé => Expiration immédiate
+    if (!sessionStart) return 0;
     const elapsed = Math.floor((Date.now() - Number(sessionStart)) / 1000);
     return SESSION_DURATION - elapsed;
   }
@@ -523,7 +521,6 @@
   }
 
   function expireSession() {
-    // Note: On ne vide pas sessionStorage pour maintenir le blocage même en cas de refresh (slide/F5)
     document.body.innerHTML = `
       <div style="
         display: flex;
@@ -645,22 +642,11 @@
   function record(action, customDateStr = null, customTimeStr = null, isManual = false) {
     if (!selectedUser || getRemainingSeconds() <= 0) return;
 
-    const now = new Date();
-    const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
-    const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
-    const modeStr = isManual ? 'MANUEL' : 'AUTOMATIQUE';
-
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`)
-      .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}`);
-        renderHistory();
-      });
-
+    // Arrêt du minuteur et verrouillage du bouton pour éviter le double-clic
     clearInterval(timerInterval);
-    
-    // Verrouille la session après validation
-    sessionStorage.setItem('sessionStartTime', 0);
-    
+    document.querySelectorAll('.btn-action, .btn-manual-submit').forEach(b => b.style.pointerEvents = 'none');
+
+    // Affichage d'un état de chargement
     document.body.innerHTML = `
       <div style="
         display: flex;
@@ -675,15 +661,50 @@
         padding: 30px;
         box-sizing: border-box;
       ">
-        <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
-        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
-        <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5;">
-          ${selectedUser} (${action}) enregistrée le ${dateStr} à ${timeStr}.
-        </p>
+        <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
+        <h2 style="font-size: 1.3rem; font-weight: 700; color: #0284c7;">Enregistrement en cours...</h2>
+        <p style="font-size: 0.95rem; color: #64748b; margin-top: 8px;">Veuillez patienter un instant.</p>
       </div>
     `;
 
-    try { window.close(); } catch(e) {}
+    const now = new Date();
+    const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
+    const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+    const modeStr = isManual ? 'MANUEL' : 'AUTOMATIQUE';
+
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`)
+      .then(() => {
+        // Bloque la session pour empêcher de re-pointer au rafraîchissement
+        sessionStorage.setItem('sessionStartTime', 0);
+
+        document.body.innerHTML = `
+          <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100vw;
+            background-color: #ffffff;
+            color: #0f172a;
+            text-align: center;
+            padding: 30px;
+            box-sizing: border-box;
+          ">
+            <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
+            <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
+            <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5;">
+              ${selectedUser} (${action}) enregistrée le ${dateStr} à ${timeStr}.
+            </p>
+          </div>
+        `;
+
+        try { window.close(); } catch(e) {}
+      })
+      .catch(err => {
+        alert("Erreur de connexion lors de l'enregistrement. Veuillez rescanner le QR code.");
+        location.reload();
+      });
   }
 
   function toggleManualMode() {
