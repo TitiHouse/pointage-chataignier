@@ -336,6 +336,17 @@
       color: #64748b;
     }
 
+    .history-action-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .manual-icon {
+      font-size: 0.85rem;
+      cursor: help;
+    }
+
     .badge {
       padding: 2px 6px;
       border-radius: 4px;
@@ -572,7 +583,9 @@
 
       if (lastLog) {
         const { displayDate, displayTime } = parseAndFormatDateTime(lastLog.date, lastLog.time);
-        lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})`;
+        const isManual = lastLog.isManual === true || lastLog.isManual === 'true' || lastLog.manual === true || lastLog.manual === 'true';
+        const manualIcon = isManual ? ' ✏️' : '';
+        lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})${manualIcon}`;
         statusBanner.style.display = 'flex';
 
         if (lastLog.action === 'ENTRÉE') {
@@ -618,16 +631,21 @@
     if (e.key === 'Enter') validatePin();
   });
 
-  function record(action, customDateStr = null, customTimeStr = null) {
+  function record(action, customDateStr = null, customTimeStr = null, isManual = false) {
     if (!selectedUser || timeLeft <= 0) return;
 
     const now = new Date();
     const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
     const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
 
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
+    let url = `${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`;
+    if (isManual) {
+      url += `&isManual=true`;
+    }
+
+    fetch(url)
       .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}`);
+        showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}${isManual ? ' (Manuel)' : ''}`);
         renderHistory();
       });
 
@@ -664,7 +682,7 @@
     const [y, m, d] = dateVal.split('-');
     const formattedDate = `${d}/${m}/${y}`;
 
-    record(currentManualAction, formattedDate, timeVal);
+    record(currentManualAction, formattedDate, timeVal, true);
   }
 
   function showAlert(msg) {
@@ -729,6 +747,8 @@
         list.innerHTML = cachedLogs.slice(0, 10).map(log => {
           const { displayDate, displayTime } = parseAndFormatDateTime(log.date, log.time);
           const formattedDateTime = displayTime ? `${displayDate} à ${displayTime}` : displayDate;
+          const isManual = log.isManual === true || log.isManual === 'true' || log.manual === true || log.manual === 'true';
+          const manualIcon = isManual ? '<span class="manual-icon" title="Rattrapage manuel">✏️</span>' : '';
 
           return `
             <li class="history-item">
@@ -736,7 +756,10 @@
                 <strong>${log.user || 'Collaborateur'}</strong>
                 <span class="history-date">${formattedDateTime}</span>
               </div>
-              <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action || ''}</span>
+              <div class="history-action-container">
+                ${manualIcon}
+                <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action || ''}</span>
+              </div>
             </li>
           `;
         }).join('');
@@ -751,10 +774,11 @@
       .then(res => res.json())
       .then(logs => {
         if (!logs || logs.length === 0) return alert('Aucune donnée à exporter.');
-        let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
+        let csvContent = "\uFEFFDate;Heure;Collaborateur;Action;Mode\n";
         logs.forEach(l => {
           const { displayDate, displayTime } = parseAndFormatDateTime(l.date, l.time);
-          csvContent += `${displayDate};${displayTime};${l.user || ''};${l.action || ''}\n`;
+          const isManual = l.isManual === true || l.isManual === 'true' || l.manual === true || l.manual === 'true';
+          csvContent += `${displayDate};${displayTime};${l.user || ''};${l.action || ''};${isManual ? 'Manuel' : 'Direct'}\n`;
         });
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
