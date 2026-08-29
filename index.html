@@ -212,7 +212,6 @@
       pointer-events: none !important;
     }
 
-    /* Section Oubli de pointage */
     .manual-toggle-container {
       margin-bottom: 20px;
     }
@@ -346,7 +345,6 @@
     .badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
     .badge-out { background-color: #fee2e2; color: #dc2626; }
 
-    /* Modale PIN */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -551,16 +549,13 @@
         btn.classList.toggle('selected', btn.innerText === selectedUser);
       });
 
-      // Activer les boutons d'action
       const btnIn = document.getElementById('btnIn');
       const btnOut = document.getElementById('btnOut');
       btnIn.classList.add('active');
       btnOut.classList.add('active');
 
-      // Afficher l'option de rattrapage manuel
       document.getElementById('btnToggleManual').style.display = 'inline-block';
 
-      // Déterminer la dernière action du collaborateur
       const userLogs = cachedLogs.filter(l => l.user === selectedUser);
       const lastLog = userLogs.length > 0 ? userLogs[0] : null;
 
@@ -575,7 +570,6 @@
         lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})`;
         statusBanner.style.display = 'flex';
 
-        // Proposer automatiquement l'action opposée
         if (lastLog.action === 'ENTRÉE') {
           btnOut.classList.add('recommended');
         } else {
@@ -625,13 +619,10 @@
     box.style.display = isOpen ? 'none' : 'block';
 
     if (!isOpen) {
-      // Définir par défaut la date d'hier et l'heure actuelle
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      const yyyy = yesterday.getFullYear();
-      const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
-      const dd = String(yesterday.getDate()).padStart(2, '0');
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
       
       document.getElementById('manualDate').value = `${yyyy}-${mm}-${dd}`;
       document.getElementById('manualTime').value = "18:00";
@@ -647,7 +638,6 @@
       return;
     }
 
-    // Convertir AAAA-MM-JJ en JJ/MM/AAAA
     const [y, m, d] = dateVal.split('-');
     const formattedDate = `${d}/${m}/${y}`;
 
@@ -677,36 +667,26 @@
     let displayDate = (rawDate !== undefined && rawDate !== null) ? String(rawDate) : '';
     let displayTime = (rawTime !== undefined && rawTime !== null) ? String(rawTime) : '';
 
-    if (displayTime.includes('T')) {
-      const timeParts = displayTime.split('T');
-      const timePart = timeParts[1] || '';
-      const tMatch = timePart.match(/^(\d{2}):(\d{2})/);
-      if (tMatch) {
-        displayTime = `${tMatch[1]}:${tMatch[2]}`;
-      }
-    } else if (/^\d{2}:\d{2}:\d{2}$/.test(displayTime)) {
-      displayTime = displayTime.substring(0, 5);
-    }
-
     if (displayDate.includes('T')) {
-      const dateParts = displayDate.split('T');
-      const datePart = dateParts[0] || '';
-      const timePart = dateParts[1] || '';
-
-      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-        const [y, m, d] = datePart.split('-');
-        displayDate = `${d}/${m}/${y}`;
-      }
-
-      if (!displayTime && timePart) {
-        const tMatch = timePart.match(/^(\d{2}):(\d{2})/);
-        if (tMatch) {
-          displayTime = `${tMatch[1]}:${tMatch[2]}`;
+      const parsedDate = new Date(displayDate);
+      if (!isNaN(parsedDate.getTime())) {
+        displayDate = parsedDate.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        if (!displayTime) {
+          displayTime = parsedDate.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
         }
       }
     } else if (/^\d{4}-\d{2}-\d{2}$/.test(displayDate)) {
-      const [y, m, d] = dateDate.split('-');
+      const [y, m, d] = displayDate.split('-');
       displayDate = `${d}/${m}/${y}`;
+    }
+
+    if (displayTime.includes('T')) {
+      const parsedTime = new Date(displayTime);
+      if (!isNaN(parsedTime.getTime())) {
+        displayTime = parsedTime.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+      }
+    } else if (/^\d{2}:\d{2}:\d{2}$/.test(displayTime)) {
+      displayTime = displayTime.substring(0, 5);
     }
 
     return { displayDate, displayTime };
