@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pointage - Centre Médical du Châtaignier</title>
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvaW50YWdlIENlbnRyZSBNw6lkaWNhbCIsCiAgInNob3J0X25hbWUiOiAiUG9pbnRhZ2UiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjOGNkYjI5Igp9">
+  <style>
+    :root {
+      --primary-green: #8cdb29;
+      --primary-dark: #6fae1b;
+      --bg-dark: #0f172a;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      background-color: #f8fafc;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background-color: #ffffff;
+      padding: 25px 20px;
+      text-align: center;
+      border-bottom: 3px solid var(--primary-green);
+    }
+
+    .logo-container {
+      width: 110px;
+      height: 110px;
+      margin: 0 auto 12px auto;
+      border-radius: 50%;
+      background-color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+    }
+
+    .logo-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .header h1 {
+      font-size: 1.25rem;
+      color: #0f172a;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .content {
+      padding: 20px;
+      flex: 1;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .collaborators {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .btn-user {
+      padding: 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-user.selected {
+      border-color: var(--primary-green);
+      background-color: rgba(140, 219, 41, 0.15);
+      color: var(--primary-dark);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .btn-action {
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      opacity: 0.5;
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .btn-in {
+      background-color: var(--primary-green);
+      color: #0f172a;
+    }
+
+    .btn-out {
+      background-color: #ef4444;
+    }
+
+    .btn-action:active {
+      transform: scale(0.98);
+    }
+
+    .alert {
+      padding: 12px;
+      border-radius: 8px;
+      background-color: #dcfce7;
+      color: #15803d;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .history-card {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .export-btn {
+      background: #0f172a;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .history-list {
+      max-height: 180px;
+      overflow-y: auto;
+      list-style: none;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.85rem;
+    }
+
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
+    .badge-out { background-color: #fee2e2; color: #dc2626; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="header">
+    <div class="logo-container">
+      <svg class="logo-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="95" fill="none" stroke="#8cdb29" stroke-width="8"/>
+        <path d="M 50 160 C 50 120, 30 110, 45 80 C 60 50, 90 30, 100 30 C 110 30, 140 50, 155 80 C 170 110, 150 120, 150 160 Z" fill="#8cdb29"/>
+        <rect x="92" y="145" width="16" height="20" fill="#ffffff" />
+      </svg>
+    </div>
+    <h1>Centre Médical<br>du Châtaignier</h1>
+  </div>
+
+  <div class="content">
+    <div class="section-title">1. Choisir le collaborateur</div>
+    <div class="collaborators">
+      <button class="btn-user" onclick="selectUser('Julie')">Julie</button>
+      <button class="btn-user" onclick="selectUser('Vincent')">Vincent</button>
+    </div>
+
+    <div class="section-title">2. Action</div>
+    <div class="actions">
+      <button id="btnIn" class="btn-action btn-in" onclick="record('ENTRÉE')">ENTRÉE</button>
+      <button id="btnOut" class="btn-action btn-out" onclick="record('SORTIE')">SORTIE</button>
+    </div>
+
+    <div id="alertMsg" class="alert"></div>
+
+    <div class="history-card">
+      <div class="history-header">
+        <span class="section-title" style="margin:0;">Derniers pointages</span>
+        <button class="export-btn" onclick="exportToCSV()">Télécharger CSV</button>
+      </div>
+      <ul id="historyList" class="history-list"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  let selectedUser = null;
+
+  function selectUser(name) {
+    selectedUser = name;
+    document.querySelectorAll('.btn-user').forEach(btn => {
+      btn.classList.toggle('selected', btn.innerText === name);
+    });
+    document.getElementById('btnIn').classList.add('active');
+    document.getElementById('btnOut').classList.add('active');
+  }
+
+  function record(action) {
+    if (!selectedUser) return;
+
+    const now = new Date();
+    const entry = {
+      date: now.toLocaleDateString('fr-BE'),
+      time: now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }),
+      user: selectedUser,
+      action: action
+    };
+
+    let logs = JSON.parse(localStorage.getItem('pointages') || '[]');
+    logs.unshift(entry);
+    localStorage.setItem('pointages', JSON.stringify(logs));
+
+    showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${entry.time}`);
+    resetSelection();
+    renderHistory();
+  }
+
+  function showAlert(msg) {
+    const alert = document.getElementById('alertMsg');
+    alert.innerText = msg;
+    alert.style.display = 'block';
+    setTimeout(() => { alert.style.display = 'none'; }, 4000);
+  }
+
+  function resetSelection() {
+    selectedUser = null;
+    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('btnIn').classList.remove('active');
+    document.getElementById('btnOut').classList.remove('active');
+  }
+
+  function renderHistory() {
+    const logs = JSON.parse(localStorage.getItem('pointages') || '[]');
+    const list = document.getElementById('historyList');
+    list.innerHTML = logs.slice(0, 10).map(log => `
+      <li class="history-item">
+        <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
+        <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
+      </li>
+    `).join('');
+  }
+
+  function exportToCSV() {
+    const logs = JSON.parse(localStorage.getItem('pointages') || '[]');
+    if (logs.length === 0) return alert('Aucune donnée à exporter.');
+
+    let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
+    logs.forEach(l => {
+      csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  renderHistory();
+</script>
+
+</body>
+</html>
