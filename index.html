@@ -1,10 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pointage - Centre Médical du Châtaignier</title>
+
   <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvaW50YWdlIENlbnRyZSBNw6lkaWNhbCIsCiAgInNob3J0X25hbWUiOiAiUG9pbnRhZ2UiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjOGNkYjI5Igp9">
+
   <style>
     :root {
       --primary-green: #8cdb29;
@@ -187,6 +190,16 @@
       display: none;
     }
 
+    .alert.error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .alert.loading {
+      background-color: #e0f2fe;
+      color: #0369a1;
+    }
+
     .history-card {
       background: white;
       border-radius: 12px;
@@ -233,155 +246,637 @@
       font-weight: 700;
     }
 
-    .badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
-    .badge-out { background-color: #fee2e2; color: #dc2626; }
+    .badge-in {
+      background-color: rgba(140, 219, 41, 0.2);
+      color: var(--primary-dark);
+    }
+
+    .badge-out {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
   </style>
+
 </head>
+
 <body>
 
 <div class="app-container">
+
   <div class="header">
     <div class="logo-container">
       <img src="Chataignier.png" alt="Logo Centre Médical du Châtaignier" class="logo-img">
     </div>
-    <h1>Centre Médical<br>du Châtaignier</h1>
+
+```
+<h1>
+  Centre Médical<br>
+  du Châtaignier
+</h1>
+```
+
   </div>
 
   <div id="timerBanner" class="timer-banner">
-    ⏱️ Temps restant pour valider : <span id="countdown">60</span>s
+    ⏱️ Temps restant pour valider :
+    <span id="countdown">60</span>s
   </div>
 
   <div class="content">
-    <div class="section-title">1. Choisir le collaborateur</div>
-    <div class="collaborators">
-      <button class="btn-user" onclick="selectUser('Julie')">Julie</button>
-      <button class="btn-user" onclick="selectUser('Vincent')">Vincent</button>
-    </div>
 
-    <div class="section-title">2. Action</div>
-    <div class="actions">
-      <button id="btnIn" class="btn-action btn-in" onclick="record('ENTRÉE')">ENTRÉE</button>
-      <button id="btnOut" class="btn-action btn-out" onclick="record('SORTIE')">SORTIE</button>
-    </div>
+```
+<div class="section-title">
+  1. Choisir le collaborateur
+</div>
 
-    <div id="alertMsg" class="alert"></div>
+<div class="collaborators">
+  <button class="btn-user" onclick="selectUser('Julie')">
+    Julie
+  </button>
 
-    <div class="history-card">
-      <div class="history-header">
-        <span class="section-title" style="margin:0;">Derniers pointages</span>
-        <button class="export-btn" onclick="exportToCSV()">Télécharger CSV</button>
-      </div>
-      <ul id="historyList" class="history-list"></ul>
-    </div>
+  <button class="btn-user" onclick="selectUser('Vincent')">
+    Vincent
+  </button>
+</div>
+
+<div class="section-title">
+  2. Action
+</div>
+
+<div class="actions">
+
+  <button
+    id="btnIn"
+    class="btn-action btn-in"
+    onclick="record('ENTRÉE')">
+    ENTRÉE
+  </button>
+
+  <button
+    id="btnOut"
+    class="btn-action btn-out"
+    onclick="record('SORTIE')">
+    SORTIE
+  </button>
+
+</div>
+
+<div id="alertMsg" class="alert"></div>
+
+<div class="history-card">
+
+  <div class="history-header">
+
+    <span
+      class="section-title"
+      style="margin:0;">
+      Derniers pointages
+    </span>
+
+    <button
+      class="export-btn"
+      onclick="exportToCSV()">
+      Télécharger CSV
+    </button>
+
   </div>
+
+  <ul
+    id="historyList"
+    class="history-list">
+  </ul>
+
+</div>
+```
+
+  </div>
+
 </div>
 
 <script>
-    // URL Google Apps Script de centralisation
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwuC4zNdsejh4BLSTlGoEyMizhfVylgUn8Fw2eVfS5U4ig6I6ssa8Yg4Fx31GAdsVwY/exec";
+
+  // URL Google Apps Script de centralisation
+  const SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbytk4zzP4T6Z0_Mwuf6Wt_J0U6fMLKQD2_U75nF1HDUnFUhGwKsI9_ZfVckpPbKl3flvQ/exec";
+
 
   let selectedUser = null;
-  let timeLeft = 60;
-  let timerInterval = null;
+  let timeLeft = 60;
+  let timerInterval = null;
 
-  function startTimer() {
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      document.getElementById('countdown').innerText = timeLeft;
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        expireSession();
-      }
-    }, 1000);
-  }
+  // Indique si un pointage est actuellement en cours d'envoi
+  let isRecording = false;
 
-  function expireSession() {
-    const banner = document.getElementById('timerBanner');
-    banner.classList.add('expired');
-    banner.innerHTML = "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
-    document.querySelectorAll('.btn-user').forEach(btn => btn.disabled = true);
-    document.getElementById('btnIn').disabled = true;
-    document.getElementById('btnOut').disabled = true;
-    resetSelection();
-  }
 
-  function selectUser(name) {
-    if (timeLeft <= 0) return;
-    selectedUser = name;
-    document.querySelectorAll('.btn-user').forEach(btn => {
-      btn.classList.toggle('selected', btn.innerText === name);
-    });
-    document.getElementById('btnIn').classList.add('active');
-    document.getElementById('btnOut').classList.add('active');
-  }
+  /*
+   * Démarrage du compte à rebours
+   */
+  function startTimer() {
 
-  function record(action) {
-    if (!selectedUser || timeLeft <= 0) return;
+    timerInterval = setInterval(() => {
 
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-BE');
-    const timeStr = now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+      timeLeft--;
 
-    // Envoi immédiat vers Google Sheets
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
-      .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`);
-        renderHistory();
-      });
+      document.getElementById('countdown').innerText = timeLeft;
 
-    clearInterval(timerInterval);
-    document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
-    resetSelection();
-  }
+      if (timeLeft <= 0) {
 
-  function showAlert(msg) {
-    const alert = document.getElementById('alertMsg');
-    alert.innerText = msg;
-    alert.style.display = 'block';
-    setTimeout(() => { alert.style.display = 'none'; }, 4000);
-  }
+        clearInterval(timerInterval);
 
-  function resetSelection() {
-    selectedUser = null;
-    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('btnIn').classList.remove('active');
-    document.getElementById('btnOut').classList.remove('active');
-  }
+        expireSession();
 
-  function renderHistory() {
-    fetch(SCRIPT_URL)
-      .then(res => res.json())
-      .then(logs => {
-        const list = document.getElementById('historyList');
-        list.innerHTML = logs.slice(0, 10).map(log => `
-          <li class="history-item">
-            <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
-            <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
-          </li>
-        `).join('');
-      });
-  }
+      }
 
-  function exportToCSV() {
-    fetch(SCRIPT_URL)
-      .then(res => res.json())
-      .then(logs => {
-        if (logs.length === 0) return alert('Aucune donnée à exporter.');
-        let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
-        logs.forEach(l => {
-          csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
-        });
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Pointages_Chataignier_${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
-      });
-  }
+    }, 1000);
+  }
 
-  startTimer();
-  renderHistory();
+
+  /*
+   * Expiration de la session
+   */
+  function expireSession() {
+
+    const banner =
+      document.getElementById('timerBanner');
+
+    banner.classList.add('expired');
+
+    banner.innerHTML =
+      "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
+
+    document
+      .querySelectorAll('.btn-user')
+      .forEach(btn => btn.disabled = true);
+
+    document.getElementById('btnIn').disabled = true;
+    document.getElementById('btnOut').disabled = true;
+
+    resetSelection();
+  }
+
+
+  /*
+   * Sélection d'un collaborateur
+   */
+  function selectUser(name) {
+
+    // Impossible de sélectionner quelqu'un
+    // si le temps est écoulé ou si un pointage est en cours
+    if (timeLeft <= 0 || isRecording) {
+      return;
+    }
+
+    selectedUser = name;
+
+    document
+      .querySelectorAll('.btn-user')
+      .forEach(btn => {
+
+        btn.classList.toggle(
+          'selected',
+          btn.innerText === name
+        );
+
+      });
+
+    document
+      .getElementById('btnIn')
+      .classList.add('active');
+
+    document
+      .getElementById('btnOut')
+      .classList.add('active');
+  }
+
+
+  /*
+   * Enregistrement du pointage
+   */
+  async function record(action) {
+
+    // Vérifications avant d'envoyer le pointage
+    if (!selectedUser || timeLeft <= 0 || isRecording) {
+      return;
+    }
+
+    // On bloque immédiatement les boutons
+    // pour empêcher les doubles clics
+    isRecording = true;
+
+    const btnIn =
+      document.getElementById('btnIn');
+
+    const btnOut =
+      document.getElementById('btnOut');
+
+    btnIn.disabled = true;
+    btnOut.disabled = true;
+
+
+    const now = new Date();
+
+    const dateStr =
+      now.toLocaleDateString('fr-BE');
+
+    const timeStr =
+      now.toLocaleTimeString(
+        'fr-BE',
+        {
+          hour: '2-digit',
+          minute: '2-digit'
+        }
+      );
+
+
+    // Message indiquant que l'application travaille
+    showAlert(
+      "⏳ Enregistrement du pointage en cours...",
+      "loading"
+    );
+
+
+    /*
+     * Construction de l'URL
+     */
+    const url =
+      `${SCRIPT_URL}` +
+      `?user=${encodeURIComponent(selectedUser)}` +
+      `&action=${encodeURIComponent(action)}` +
+      `&date=${encodeURIComponent(dateStr)}` +
+      `&time=${encodeURIComponent(timeStr)}`;
+
+
+    try {
+
+      /*
+       * On ATTEND réellement la réponse de Google.
+       *
+       * C'est ici la grosse différence avec
+       * l'ancien code.
+       */
+      const response = await fetch(url);
+
+
+      /*
+       * fetch() peut réussir au niveau réseau
+       * même si le serveur répond avec une erreur HTTP.
+       *
+       * On vérifie donc response.ok.
+       */
+      if (!response.ok) {
+
+        throw new Error(
+          `Erreur serveur (${response.status})`
+        );
+      }
+
+
+      /*
+       * Si Google Apps Script renvoie du JSON,
+       * on essaie de le lire.
+       *
+       * Si ce n'est pas du JSON, ce n'est pas forcément
+       * une erreur : certains Apps Script peuvent répondre
+       * avec du texte.
+       */
+      let serverData = null;
+
+      try {
+
+        serverData = await response.json();
+
+      } catch (jsonError) {
+
+        // Réponse non JSON :
+        // on considère quand même la requête HTTP
+        // comme réussie si response.ok === true.
+
+      }
+
+
+      /*
+       * À partir d'ici seulement,
+       * on considère le pointage comme envoyé.
+       */
+      showAlert(
+        `✅ Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`,
+        "success"
+      );
+
+
+      /*
+       * Le pointage étant confirmé par la réponse HTTP,
+       * on arrête le compteur.
+       */
+      clearInterval(timerInterval);
+
+      document
+        .getElementById('timerBanner')
+        .innerHTML =
+        "✅ Pointage validé avec succès !";
+
+
+      /*
+       * On recharge l'historique.
+       */
+      renderHistory();
+
+
+      /*
+       * On réinitialise la sélection.
+       */
+      resetSelection();
+
+
+    } catch (error) {
+
+      /*
+       * Une erreur est survenue :
+       *
+       * - pas d'Internet
+       * - Google Apps Script inaccessible
+       * - erreur serveur
+       * - problème réseau
+       *
+       * On NE dit surtout pas que le pointage
+       * a été enregistré.
+       */
+
+      console.error(
+        "Erreur lors de l'enregistrement du pointage :",
+        error
+      );
+
+
+      showAlert(
+        "❌ Impossible d'enregistrer le pointage. Vérifiez votre connexion et réessayez.",
+        "error"
+      );
+
+
+      /*
+       * On remet les boutons dans leur état normal
+       * afin que l'utilisateur puisse réessayer.
+       */
+      btnIn.disabled = false;
+      btnOut.disabled = false;
+
+      isRecording = false;
+
+      return;
+    }
+
+
+    /*
+     * Le pointage a été traité correctement.
+     */
+    isRecording = false;
+
+  }
+
+
+  /*
+   * Affichage d'un message
+   */
+  function showAlert(msg, type = "success") {
+
+    const alert =
+      document.getElementById('alertMsg');
+
+    alert.innerText = msg;
+
+    alert.className = "alert";
+
+    if (type === "error") {
+      alert.classList.add("error");
+    }
+
+    if (type === "loading") {
+      alert.classList.add("loading");
+    }
+
+    alert.style.display = 'block';
+
+
+    /*
+     * Les messages d'erreur et de chargement
+     * restent affichés.
+     *
+     * Les messages de succès disparaissent
+     * automatiquement après 4 secondes.
+     */
+    if (type === "success") {
+
+      setTimeout(() => {
+
+        alert.style.display = 'none';
+
+      }, 4000);
+
+    }
+
+  }
+
+
+  /*
+   * Réinitialisation de la sélection
+   */
+  function resetSelection() {
+
+    selectedUser = null;
+
+    document
+      .querySelectorAll('.btn-user')
+      .forEach(btn =>
+        btn.classList.remove('selected')
+      );
+
+    document
+      .getElementById('btnIn')
+      .classList.remove('active');
+
+    document
+      .getElementById('btnOut')
+      .classList.remove('active');
+
+  }
+
+
+  /*
+   * Affichage de l'historique
+   */
+  async function renderHistory() {
+
+    const list =
+      document.getElementById('historyList');
+
+
+    try {
+
+      const response =
+        await fetch(SCRIPT_URL);
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          `Erreur serveur (${response.status})`
+        );
+
+      }
+
+
+      const logs =
+        await response.json();
+
+
+      list.innerHTML =
+        logs.slice(0, 10).map(log => `
+
+          <li class="history-item">
+
+            <span>
+              <strong>${log.user}</strong>
+              (${log.date} ${log.time})
+            </span>
+
+            <span class="badge ${
+              log.action === 'ENTRÉE'
+                ? 'badge-in'
+                : 'badge-out'
+            }">
+              ${log.action}
+            </span>
+
+          </li>
+
+        `).join('');
+
+
+    } catch (error) {
+
+      console.error(
+        "Erreur lors du chargement de l'historique :",
+        error
+      );
+
+      list.innerHTML = `
+        <li class="history-item">
+          <span>
+            Impossible de charger l'historique.
+          </span>
+        </li>
+      `;
+
+    }
+
+  }
+
+
+  /*
+   * Export CSV
+   */
+  async function exportToCSV() {
+
+    try {
+
+      const response =
+        await fetch(SCRIPT_URL);
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          `Erreur serveur (${response.status})`
+        );
+
+      }
+
+
+      const logs =
+        await response.json();
+
+
+      if (logs.length === 0) {
+
+        alert(
+          'Aucune donnée à exporter.'
+        );
+
+        return;
+      }
+
+
+      let csvContent =
+        "\uFEFFDate;Heure;Collaborateur;Action\n";
+
+
+      logs.forEach(l => {
+
+        csvContent +=
+          `${l.date};${l.time};${l.user};${l.action}\n`;
+
+      });
+
+
+      const blob =
+        new Blob(
+          [csvContent],
+          {
+            type: 'text/csv;charset=utf-8;'
+          }
+        );
+
+
+      const url =
+        URL.createObjectURL(blob);
+
+
+      const a =
+        document.createElement('a');
+
+      a.href = url;
+
+      a.download =
+        `Pointages_Chataignier_${
+          new Date()
+            .toISOString()
+            .slice(0,10)
+        }.csv`;
+
+
+      a.click();
+
+
+      /*
+       * Nettoyage de l'URL temporaire.
+       */
+      URL.revokeObjectURL(url);
+
+
+    } catch (error) {
+
+      console.error(
+        "Erreur lors de l'export CSV :",
+        error
+      );
+
+      alert(
+        "❌ Impossible de télécharger les pointages. Vérifiez votre connexion et réessayez."
+      );
+
+    }
+
+  }
+
+
+  /*
+   * Démarrage de l'application
+   */
+  startTimer();
+
+  renderHistory();
+
 </script>
 
 </body>
