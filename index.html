@@ -331,10 +331,6 @@
       gap: 6px;
     }
 
-    .manual-icon {
-      font-size: 0.9rem;
-    }
-
     .badge {
       padding: 2px 6px;
       border-radius: 4px;
@@ -344,6 +340,8 @@
 
     .badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
     .badge-out { background-color: #fee2e2; color: #dc2626; }
+    .badge-auto { background-color: #e0f2fe; color: #0369a1; }
+    .badge-manual { background-color: #fef08a; color: #854d0e; }
 
     .modal-overlay {
       position: fixed;
@@ -451,9 +449,7 @@
     </div>
 
     <div class="manual-toggle-container">
-      <button id="btnToggleManual" class="btn-toggle-manual" onclick="toggleManualMode()">
-        <!-- Intitulé dynamique géré en JS -->
-      </button>
+      <button id="btnToggleManual" class="btn-toggle-manual" onclick="toggleManualMode()"></button>
       <div id="manualBox" class="manual-box">
         <label id="manualBoxLabel">Saisir la date et l'heure :</label>
         <div class="manual-inputs">
@@ -495,7 +491,7 @@
     'Vincent': '1234'
   };
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDJDf6fj43ztbTRYb3rlXneGQftEueRUZgv6qrb_csql0N1VIqX8MMtLD9KyFf8NvjmA/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6BQ93GdIkilpcoeNA_ICoFR4kcr45sU5MC0FvTeTK0U7yTAALH1G6KhzFVCxrrhwd8g/exec";
 
   let selectedUser = null;
   let pendingUser = null;
@@ -503,18 +499,6 @@
   let timerInterval = null;
   let cachedLogs = [];
   let currentManualAction = 'SORTIE';
-
-  function saveManualFlag(user, date, time) {
-    let manualLogs = JSON.parse(localStorage.getItem('chataignier_manual_logs') || '[]');
-    manualLogs.push({ user, date, time });
-    if (manualLogs.length > 50) manualLogs.shift();
-    localStorage.setItem('chataignier_manual_logs', JSON.stringify(manualLogs));
-  }
-
-  function checkIsManual(user, date, time) {
-    let manualLogs = JSON.parse(localStorage.getItem('chataignier_manual_logs') || '[]');
-    return manualLogs.some(l => l.user === user && l.date === date && l.time === time);
-  }
 
   function startTimer() {
     timerInterval = setInterval(() => {
@@ -582,10 +566,9 @@
 
       if (lastLog) {
         const { displayDate, displayTime } = parseAndFormatDateTime(lastLog.date, lastLog.time);
-        const isManual = checkIsManual(lastLog.user, displayDate, displayTime);
-        const manualIcon = isManual ? ' ✏️' : '';
+        const modeText = (lastLog.mode === 'MANUEL') ? ' [M]' : ' [A]';
         
-        lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})${manualIcon}`;
+        lastStatusText.innerText = `${lastLog.action} (${displayDate} à ${displayTime})${modeText}`;
         statusBanner.style.display = 'flex';
 
         if (lastLog.action === 'ENTRÉE') {
@@ -637,12 +620,9 @@
     const now = new Date();
     const dateStr = customDateStr || now.toLocaleDateString('fr-BE');
     const timeStr = customTimeStr || now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+    const modeStr = isManual ? 'MANUEL' : 'AUTOMATIQUE';
 
-    if (isManual) {
-      saveManualFlag(selectedUser, dateStr, timeStr);
-    }
-
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`)
       .then(() => {
         showAlert(`Pointage enregistré : ${selectedUser} (${action}) le ${dateStr} à ${timeStr}`);
         renderHistory();
@@ -746,8 +726,10 @@
         list.innerHTML = cachedLogs.slice(0, 10).map(log => {
           const { displayDate, displayTime } = parseAndFormatDateTime(log.date, log.time);
           const formattedDateTime = displayTime ? `${displayDate} à ${displayTime}` : displayDate;
-          const isManual = checkIsManual(log.user, displayDate, displayTime);
-          const manualIcon = isManual ? '<span class="manual-icon" title="Rattrapage manuel">✏️</span>' : '';
+          
+          const modeBadge = (log.mode === 'MANUEL')
+            ? '<span class="badge badge-manual" title="Saisie manuelle">M</span>'
+            : '<span class="badge badge-auto" title="Pointage automatique">A</span>';
 
           return `
             <li class="history-item">
@@ -756,7 +738,7 @@
                 <span class="history-date">${formattedDateTime}</span>
               </div>
               <div class="history-action-container">
-                ${manualIcon}
+                ${modeBadge}
                 <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action || ''}</span>
               </div>
             </li>
