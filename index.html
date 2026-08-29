@@ -3,469 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pointage - Centre Médical du Châtaignier</title>
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvaW50YWdlIENlbnRyZSBNw6lkaWNhbCIsCiAgInNob3J0X25hbWUiOiAiUG9pbnRhZ2UiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjOGNkYjI5Igp9">
+  <title>Centre Médical du Châtaignier - Pointage</title>
   <style>
-    :root {
-      --primary-green: #8cdb29;
-      --primary-dark: #6fae1b;
-      --bg-dark: #0f172a;
-      --card-bg: #ffffff;
-      --text-color: #1e293b;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-color);
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 15px;
-    }
-
-    .app-container {
-      width: 100%;
-      max-width: 480px;
-      background-color: #f8fafc;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .header {
-      background-color: #ffffff;
-      padding: 20px;
-      text-align: center;
-      border-bottom: 3px solid var(--primary-green);
-    }
-
-    .logo-container {
-      width: 200px;
-      height: 200px;
-      margin: 0 auto 10px auto;
-      border-radius: 50%;
-      background-color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-      border: none;
-      overflow: hidden;
-    }
-
-    .logo-img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      border-radius: 50%;
-    }
-
-    .header h1 {
-      font-size: 1.15rem;
-      color: #0f172a;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .timer-banner {
-      background-color: #fef3c7;
-      color: #92400e;
-      text-align: center;
-      padding: 10px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      border-bottom: 1px solid #fde68a;
-    }
-
-    .timer-banner.expired {
-      background-color: #fee2e2;
-      color: #991b1b;
-      border-color: #fca5a5;
-    }
-
-    .content {
-      padding: 20px;
-      flex: 1;
-    }
-
-    .section-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-
-    .collaborators {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 25px;
-    }
-
-    .btn-user {
-      padding: 15px;
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      background: white;
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--text-color);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-user.selected {
-      border-color: var(--primary-green);
-      background-color: rgba(140, 219, 41, 0.15);
-      color: var(--primary-dark);
-    }
-
-    .btn-user:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 25px;
-    }
-
-    .btn-action {
-      padding: 18px;
-      border: none;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: white;
-      cursor: pointer;
-      opacity: 0.5;
-      pointer-events: none;
-      transition: all 0.2s ease;
-    }
-
-    .btn-action.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .btn-in {
-      background-color: var(--primary-green);
-      color: #0f172a;
-    }
-
-    .btn-out {
-      background-color: #ef4444;
-    }
-
-    .btn-action:disabled {
-      opacity: 0.3 !important;
-      pointer-events: none !important;
-    }
-
-    .alert {
-      padding: 12px;
-      border-radius: 8px;
-      background-color: #dcfce7;
-      color: #15803d;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.95rem;
-      margin-bottom: 20px;
-      display: none;
-    }
-
-    .history-card {
-      background: white;
-      border-radius: 12px;
-      padding: 15px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .export-btn {
-      background: #0f172a;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .history-list {
-      max-height: 180px;
-      overflow-y: auto;
-      list-style: none;
-    }
-
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #f1f5f9;
-      font-size: 0.85rem;
-    }
-
-    .badge {
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .badge-in { background-color: rgba(140, 219, 41, 0.2); color: var(--primary-dark); }
-    .badge-out { background-color: #fee2e2; color: #dc2626; }
-
-    /* Styles Modale PIN */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.75);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-
-    .modal-overlay.active {
-      display: flex;
-    }
-
-    .modal-box {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      width: 100%;
-      max-width: 320px;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-    }
-
-    .modal-box h3 {
-      font-size: 1rem;
-      margin-bottom: 15px;
-      color: #0f172a;
-    }
-
-    .pin-input {
-      width: 100%;
-      padding: 12px;
-      font-size: 1.5rem;
-      letter-spacing: 8px;
-      text-align: center;
-      border: 2px solid #cbd5e1;
-      border-radius: 10px;
-      outline: none;
-      margin-bottom: 10px;
-    }
-
-    .pin-input:focus {
-      border-color: var(--primary-green);
-    }
-
-    .pin-error {
-      color: #dc2626;
-      font-weight: 700;
-      font-size: 0.85rem;
-      margin-bottom: 12px;
-      display: none;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .modal-btn {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-    }
-
-    .btn-cancel { background: #e2e8f0; color: #475569; }
-    .btn-confirm { background: var(--primary-green); color: #0f172a; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #0f172a; color: #1e293b; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: white; border-radius: 16px; padding: 24px; max-width: 480px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    h1 { font-size: 1.25rem; text-align: center; text-transform: uppercase; margin: 0 0 16px 0; letter-spacing: 0.5px; }
+    .timer-banner { background: #fef9c3; color: #854d0e; font-weight: 600; text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; }
+    .section-title { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .btn { border: 2px solid #e2e8f0; background: white; border-radius: 12px; padding: 14px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
+    .btn.selected { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+    .btn-in { background: #bef264; color: #365314; border: none; }
+    .btn-in:hover { background: #a3e635; }
+    .btn-out { background: #fca5a5; color: #7f1d1d; border: none; }
+    .btn-out:hover { background: #f87171; }
+    .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .btn-csv { background: #0f172a; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    ul.history-list { list-style: none; padding: 0; margin: 0; background: #f8fafc; border-radius: 12px; padding: 8px 12px; min-height: 50px; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+    .history-item:last-child { border-bottom: none; }
+    .badge { font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+    .badge-in { background: #d9f99d; color: #365314; }
+    .badge-out { background: #fecaca; color: #7f1d1d; }
   </style>
 </head>
 <body>
 
-<div class="app-container">
-  <div class="header">
-    <div class="logo-container">
-      <img src="Chataignier.png" alt="Logo Centre Médical du Châtaignier" class="logo-img">
-    </div>
-    <h1>Centre Médical<br>du Châtaignier</h1>
+<div class="card">
+  <h1>Centre Médical<br>du Châtaignier</h1>
+  
+  <div class="timer-banner">
+    ⏱️ Temps restant pour valider : <span id="timer">15</span>s
   </div>
 
-  <div id="timerBanner" class="timer-banner">
-    ⏱️ Temps restant pour valider : <span id="countdown">60</span>s
+  <div class="section-title">1. Choisir le collaborateur</div>
+  <div class="grid-2">
+    <button class="btn btn-user" onclick="selectUser('Julie', this)">Julie</button>
+    <button class="btn btn-user" onclick="selectUser('Vincent', this)">Vincent</button>
   </div>
 
-  <div class="content">
-    <div class="section-title">1. Choisir le collaborateur</div>
-    <div class="collaborators">
-      <button class="btn-user" onclick="openPinModal('Julie')">Julie</button>
-      <button class="btn-user" onclick="openPinModal('Vincent')">Vincent</button>
-    </div>
-
-    <div class="section-title">2. Action</div>
-    <div class="actions">
-      <button id="btnIn" class="btn-action btn-in" onclick="record('ENTRÉE')">ENTRÉE</button>
-      <button id="btnOut" class="btn-action btn-out" onclick="record('SORTIE')">SORTIE</button>
-    </div>
-
-    <div id="alertMsg" class="alert"></div>
-
-    <div class="history-card">
-      <div class="history-header">
-        <span class="section-title" style="margin:0;">Derniers pointages</span>
-        <button class="export-btn" onclick="exportToCSV()">Télécharger CSV</button>
-      </div>
-      <ul id="historyList" class="history-list"></ul>
-    </div>
+  <div class="section-title">2. Action</div>
+  <div class="grid-2">
+    <button class="btn btn-in" onclick="sendPointage('ENTRÉE')">ENTRÉE</button>
+    <button class="btn btn-out" onclick="sendPointage('SORTIE')">SORTIE</button>
   </div>
-</div>
 
-<div id="pinModal" class="modal-overlay">
-  <div class="modal-box">
-    <h3>Code d'accès : <span id="pinUserName"></span></h3>
-    <input type="password" id="pinInput" class="pin-input" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="••••" autocomplete="off">
-    <div id="pinError" class="pin-error">Erreur de connexion</div>
-    <div class="modal-actions">
-      <button class="modal-btn btn-cancel" onclick="closePinModal()">Annuler</button>
-      <button class="modal-btn btn-confirm" onclick="validatePin()">Valider</button>
-    </div>
+  <div class="history-header">
+    <span class="section-title" style="margin:0;">Derniers pointages</span>
+    <button class="btn-csv" onclick="exportToCSV()">Télécharger CSV</button>
   </div>
+
+  <ul id="historyList" class="history-list">
+    <!-- Chargé dynamiquement -->
+  </ul>
 </div>
 
 <script>
-  // Codes d'accès 4 chiffres (modifiables ici)
-  const PIN_CODES = {
-    'Julie': '0677',
-    'Vincent': '1234'
-  };
-
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDJDf6fj43ztbTRYb3rlXneGQftEueRUZgv6qrb_csql0N1VIqX8MMtLD9KyFf8NvjmA/exec";
+  // Remplacez cette variable si nécessaire
+  const SCRIPT_URL = 'VOTRE_URL_GOOGLE_APPS_SCRIPT_ICI';
 
   let selectedUser = null;
-  let pendingUser = null;
-  let timeLeft = 60;
+  let timeLeft = 15;
   let timerInterval = null;
 
   function startTimer() {
+    clearInterval(timerInterval);
+    timeLeft = 15;
+    document.getElementById('timer').textContent = timeLeft;
     timerInterval = setInterval(() => {
       timeLeft--;
-      document.getElementById('countdown').innerText = timeLeft;
+      document.getElementById('timer').textContent = timeLeft;
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        expireSession();
       }
     }, 1000);
   }
 
-  function expireSession() {
-    const banner = document.getElementById('timerBanner');
-    banner.classList.add('expired');
-    banner.innerHTML = "❌ <strong>Session expirée.</strong> Veuillez rescanner le QR Code.";
-    document.querySelectorAll('.btn-user').forEach(btn => btn.disabled = true);
-    document.getElementById('btnIn').disabled = true;
-    document.getElementById('btnOut').disabled = true;
-    closePinModal();
-    resetSelection();
+  function selectUser(user, btnElement) {
+    selectedUser = user;
+    document.querySelectorAll('.btn-user').forEach(b => b.classList.remove('selected'));
+    btnElement.classList.add('selected');
   }
 
-  function openPinModal(name) {
-    if (timeLeft <= 0) return;
-    pendingUser = name;
-    document.getElementById('pinUserName').innerText = name;
-    document.getElementById('pinInput').value = '';
-    document.getElementById('pinError').style.display = 'none';
-    document.getElementById('pinModal').classList.add('active');
-    setTimeout(() => document.getElementById('pinInput').focus(), 100);
-  }
-
-  function closePinModal() {
-    document.getElementById('pinModal').classList.remove('active');
-    pendingUser = null;
-  }
-
-  function validatePin() {
-    const inputVal = document.getElementById('pinInput').value;
-    if (inputVal === PIN_CODES[pendingUser]) {
-      selectedUser = pendingUser;
-      document.querySelectorAll('.btn-user').forEach(btn => {
-        btn.classList.toggle('selected', btn.innerText === selectedUser);
-      });
-      document.getElementById('btnIn').classList.add('active');
-      document.getElementById('btnOut').classList.add('active');
-      closePinModal();
-    } else {
-      const errEl = document.getElementById('pinError');
-      errEl.innerText = "Erreur de connexion";
-      errEl.style.display = 'block';
-      document.getElementById('pinInput').value = '';
-      document.getElementById('pinInput').focus();
+  function sendPointage(action) {
+    if (!selectedUser) {
+      alert('Veuillez d\'abord sélectionner un collaborateur.');
+      return;
     }
+
+    const data = { user: selectedUser, action: action };
+    
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(() => {
+      alert(`Pointage ${action} enregistré pour ${selectedUser}`);
+      selectedUser = null;
+      document.querySelectorAll('.btn-user').forEach(b => b.classList.remove('selected'));
+      renderHistory();
+      startTimer();
+    })
+    .catch(err => console.error('Erreur:', err));
   }
 
-  document.getElementById('pinInput').addEventListener('keyup', function(e) {
-    if (e.key === 'Enter') validatePin();
-  });
-
-  function record(action) {
-    if (!selectedUser || timeLeft <= 0) return;
-
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-BE');
-    const timeStr = now.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
-
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(selectedUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`)
-      .then(() => {
-        showAlert(`Pointage enregistré : ${selectedUser} (${action}) à ${timeStr}`);
-        renderHistory();
-      });
-
-    clearInterval(timerInterval);
-    document.getElementById('timerBanner').innerHTML = "✅ Pointage validé avec succès !";
-    resetSelection();
+  // Formatage propre des dates et heures reçues de Sheets
+  function formatDate(str) {
+    if (!str) return '';
+    const d = new Date(str);
+    return isNaN(d) ? str : d.toLocaleDateString('fr-FR');
   }
 
-  function showAlert(msg) {
-    const alert = document.getElementById('alertMsg');
-    alert.innerText = msg;
-    alert.style.display = 'block';
-    setTimeout(() => { alert.style.display = 'none'; }, 4000);
-  }
-
-  function resetSelection() {
-    selectedUser = null;
-    document.querySelectorAll('.btn-user').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('btnIn').classList.remove('active');
-    document.getElementById('btnOut').classList.remove('active');
+  function formatTime(str) {
+    if (!str) return '';
+    const d = new Date(str);
+    return isNaN(d) ? str : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
   function renderHistory() {
@@ -473,23 +128,33 @@
       .then(res => res.json())
       .then(logs => {
         const list = document.getElementById('historyList');
-        list.innerHTML = logs.slice(0, 10).map(log => `
-          <li class="history-item">
-            <span><strong>${log.user}</strong> (${log.date} ${log.time})</span>
-            <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
-          </li>
-        `).join('');
-      });
+        if (!logs || logs.length === 0) {
+          list.innerHTML = '<li class="history-item">Aucun pointage.</li>';
+          return;
+        }
+        list.innerHTML = logs.slice(0, 10).map(log => {
+          const formattedDate = formatDate(log.date);
+          const formattedTime = formatTime(log.time);
+          
+          return `
+            <li class="history-item">
+              <span><strong>${log.user}</strong> (${formattedDate} ${formattedTime})</span>
+              <span class="badge ${log.action === 'ENTRÉE' ? 'badge-in' : 'badge-out'}">${log.action}</span>
+            </li>
+          `;
+        }).join('');
+      })
+      .catch(err => console.error('Erreur lors du chargement de l\'historique:', err));
   }
 
   function exportToCSV() {
     fetch(SCRIPT_URL)
       .then(res => res.json())
       .then(logs => {
-        if (logs.length === 0) return alert('Aucune donnée à exporter.');
+        if (!logs || logs.length === 0) return alert('Aucune donnée à exporter.');
         let csvContent = "\uFEFFDate;Heure;Collaborateur;Action\n";
         logs.forEach(l => {
-          csvContent += `${l.date};${l.time};${l.user};${l.action}\n`;
+          csvContent += `${formatDate(l.date)};${formatTime(l.time)};${l.user};${l.action}\n`;
         });
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
