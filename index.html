@@ -664,6 +664,17 @@
     const modeStr = isManual ? 'MANUEL' : 'AUTOMATIQUE';
     const activeUser = selectedUser;
 
+    // 1. Envoi de la requête au serveur Google Apps Script en arrière-plan
+    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(activeUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`, {
+      method: 'GET',
+      mode: 'no-cors'
+    });
+
+    sessionStorage.setItem('sessionStartTime', 0);
+
+    // 2. Affichage direct de la confirmation avec le compte à rebours de 5 secondes
+    let closeCountdown = 5;
+
     document.body.innerHTML = `
       <div style="
         display: flex;
@@ -678,69 +689,36 @@
         padding: 30px;
         box-sizing: border-box;
       ">
-        <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
-        <h2 style="font-size: 1.3rem; font-weight: 700; color: #0284c7;">Enregistrement en cours...</h2>
-        <p style="font-size: 0.95rem; color: #64748b; margin-top: 8px;">Veuillez patienter un instant.</p>
+        <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
+        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
+        <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5; margin-bottom: 25px;">
+          <strong>${activeUser}</strong> (${action})<br>enregistré(e) pour le ${dateStr} à ${timeStr}.
+        </p>
+        <div style="
+          background-color: #f1f5f9;
+          padding: 12px 20px;
+          border-radius: 12px;
+          border: 1px solid #cbd5e1;
+          font-size: 0.9rem;
+          color: #334155;
+          font-weight: 600;
+        ">
+          🔒 Fermeture de la page dans <span id="closeTimer" style="color: #dc2626; font-size: 1.1rem; font-weight: 800;">5</span>s
+        </div>
       </div>
     `;
 
-    fetch(`${SCRIPT_URL}?user=${encodeURIComponent(activeUser)}&action=${encodeURIComponent(action)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}&mode=${encodeURIComponent(modeStr)}`, {
-      method: 'GET',
-      mode: 'no-cors'
-    })
-      .then(() => {
-        sessionStorage.setItem('sessionStartTime', 0);
+    // 3. Décompte visuel de 5 secondes avant la fermeture/expiration définitive
+    const closeInterval = setInterval(() => {
+      closeCountdown--;
+      const timerEl = document.getElementById('closeTimer');
+      if (timerEl) timerEl.innerText = closeCountdown;
 
-        let closeCountdown = 5;
-
-        document.body.innerHTML = `
-          <div style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            width: 100vw;
-            background-color: #ffffff;
-            color: #0f172a;
-            text-align: center;
-            padding: 30px;
-            box-sizing: border-box;
-          ">
-            <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
-            <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
-            <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5; margin-bottom: 25px;">
-              <strong>${activeUser}</strong> (${action})<br>enregistré(e) pour le ${dateStr} à ${timeStr}.
-            </p>
-            <div style="
-              background-color: #f1f5f9;
-              padding: 12px 20px;
-              border-radius: 12px;
-              border: 1px solid #cbd5e1;
-              font-size: 0.9rem;
-              color: #334155;
-              font-weight: 600;
-            ">
-              🔒 Fermeture de la page dans <span id="closeTimer" style="color: #dc2626; font-size: 1.1rem; font-weight: 800;">5</span>s
-            </div>
-          </div>
-        `;
-
-        const closeInterval = setInterval(() => {
-          closeCountdown--;
-          const timerEl = document.getElementById('closeTimer');
-          if (timerEl) timerEl.innerText = closeCountdown;
-
-          if (closeCountdown <= 0) {
-            clearInterval(closeInterval);
-            expireSession();
-          }
-        }, 1000);
-      })
-      .catch(err => {
-        alert("Erreur lors de l'enregistrement. Veuillez rescanner le QR code.");
-        location.reload();
-      });
+      if (closeCountdown <= 0) {
+        clearInterval(closeInterval);
+        expireSession();
+      }
+    }, 1000);
   }
 
   function toggleManualMode() {
