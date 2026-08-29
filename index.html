@@ -691,6 +691,8 @@
       .then(() => {
         sessionStorage.setItem('sessionStartTime', 0);
 
+        let closeCountdown = 5;
+
         document.body.innerHTML = `
           <div style="
             display: flex;
@@ -707,13 +709,33 @@
           ">
             <div style="font-size: 3.5rem; margin-bottom: 20px;">✅</div>
             <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 12px; color: #16a34a;">Pointage validé !</h2>
-            <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5;">
+            <p style="font-size: 1.05rem; color: #475569; max-width: 320px; line-height: 1.5; margin-bottom: 25px;">
               <strong>${activeUser}</strong> (${action})<br>enregistré(e) pour le ${dateStr} à ${timeStr}.
             </p>
+            <div style="
+              background-color: #f1f5f9;
+              padding: 12px 20px;
+              border-radius: 12px;
+              border: 1px solid #cbd5e1;
+              font-size: 0.9rem;
+              color: #334155;
+              font-weight: 600;
+            ">
+              🔒 Fermeture de la page dans <span id="closeTimer" style="color: #dc2626; font-size: 1.1rem; font-weight: 800;">5</span>s
+            </div>
           </div>
         `;
 
-        try { window.close(); } catch(e) {}
+        const closeInterval = setInterval(() => {
+          closeCountdown--;
+          const timerEl = document.getElementById('closeTimer');
+          if (timerEl) timerEl.innerText = closeCountdown;
+
+          if (closeCountdown <= 0) {
+            clearInterval(closeInterval);
+            expireSession();
+          }
+        }, 1000);
       })
       .catch(err => {
         alert("Erreur lors de l'enregistrement. Veuillez rescanner le QR code.");
